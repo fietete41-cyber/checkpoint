@@ -482,7 +482,7 @@
                         <i class="fas fa-table-list text-3xl"></i>
                     </div>
                     <h3 class="text-xl font-bold">คะแนนเก็บ</h3>
-                    <p class="text-sm text-white/80 mt-1">กรอก / แก้ไขคะแนนผู้เรียน · สำหรับครูผู้สอน</p>
+                    <p class="text-sm text-white/80 mt-1">กรอก/แก้ไขคะแนน + แจ้งเตือน LINE · สำหรับครูผู้สอน</p>
                 </div>
                 <div class="p-6 sm:p-8">
                     <label class="label">รหัสผ่าน</label>
@@ -552,113 +552,8 @@
                     </div>
                     <button onclick="addStudent()" class="btn-primary mt-5"><i class="fas fa-plus mr-2"></i>เพิ่มผู้เรียน</button>
                 </div>
-            </div>
-        </div>
-    </section>
 
-    <!-- ===================== ตั้งค่าระบบ (ครู/ผู้ดูแล) ===================== -->
-    <section id="notify" class="view py-10 sm:py-12 relative hidden">
-        <div class="container mx-auto px-4 max-w-4xl">
-
-            <!-- หน้าล็อกอินเข้าสู่การตั้งค่าระบบ -->
-            <div id="notifyLogin" class="frost-card rounded-3xl overflow-hidden max-w-md mx-auto">
-                <div class="bg-gradient-to-br from-sky-500 to-cyan-600 px-6 py-8 text-center text-white">
-                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/20 backdrop-blur mb-3">
-                        <i class="fas fa-user-lock text-3xl"></i>
-                    </div>
-                    <h3 class="text-xl font-bold">เข้าสู่ระบบตั้งค่า</h3>
-                    <p class="text-sm text-white/80 mt-1">สำหรับครูผู้สอน / ผู้ดูแลระบบ</p>
-                </div>
-                <div class="p-6 sm:p-8">
-                    <label class="label">รหัสผ่าน</label>
-                    <div class="relative">
-                        <input type="password" id="teacherPass" placeholder="••••••••" class="input-field pr-11"
-                               onkeypress="if(event.key==='Enter') teacherLogin()">
-                        <button type="button" onclick="togglePass()" aria-label="แสดง/ซ่อนรหัสผ่าน"
-                                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                            <i id="passEye" class="fas fa-eye"></i>
-                        </button>
-                    </div>
-                    <label class="flex items-center gap-2 mt-3 text-sm text-slate-600 cursor-pointer">
-                        <input type="checkbox" id="rememberAdmin" class="w-4 h-4 accent-sky-600">
-                        จดจำการเข้าสู่ระบบในเครื่องนี้
-                    </label>
-                    <button onclick="teacherLogin()" class="btn-primary w-full mt-4"><i class="fas fa-unlock mr-2"></i>เข้าสู่ระบบ</button>
-                    <p id="loginError" class="text-red-500 text-sm mt-3 text-center hidden"></p>
-                </div>
-            </div>
-
-            <!-- Panel -->
-            <div id="notifyPanel" class="hidden space-y-5 sm:space-y-6">
-
-                <div class="flex items-center justify-between bg-white/75 rounded-2xl px-4 py-3 border border-white/60 shadow-sm">
-                    <span class="text-sm text-slate-600"><i class="fas fa-circle-check text-emerald-500 mr-2"></i>เข้าสู่ระบบตั้งค่าแล้ว</span>
-                    <button onclick="adminLogout()" class="text-sm font-medium text-slate-500 hover:text-red-500 transition"><i class="fas fa-right-from-bracket mr-1"></i>ออกจากระบบ</button>
-                </div>
-
-                <!-- ==== ตั้งค่าส่วนหัว (Header) ==== -->
-                <div class="frost-card rounded-3xl p-5 sm:p-6 md:p-8">
-                    <div class="flex items-center gap-3 mb-4">
-                        <span class="w-9 h-9 flex items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-cyan-600 text-white shrink-0"><i class="fas fa-sliders"></i></span>
-                        <h3 class="text-base sm:text-lg font-bold text-slate-800">ตั้งค่าส่วนหัวของระบบ</h3>
-                    </div>
-                    <p class="text-xs sm:text-sm text-slate-500 mb-5">แก้ไขได้ทุกจุด — รูปโลโก้ ข้อความ ป้าย และไอคอน เพื่อนำระบบไปใช้กับรายวิชาอื่น (ตัวอย่างจะปรับทันทีขณะพิมพ์)</p>
-
-                    <div class="grid md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="label">ลิงก์รูปโลโก้ (URL)</label>
-                            <input type="text" id="setLogo" class="input-field" oninput="previewSettings()" placeholder="https://...">
-                            <div class="mt-2 flex items-center gap-3">
-                                <img id="setLogoPreview" alt="ตัวอย่างโลโก้" class="w-14 h-14 rounded-full ring-2 ring-slate-200 object-cover bg-slate-50 shrink-0">
-                                <span class="text-xs text-slate-400">ตัวอย่างโลโก้ที่จะแสดง</span>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="label">ชื่อระบบ (บรรทัดใหญ่)</label>
-                            <input type="text" id="setTitle" class="input-field mb-3" oninput="previewSettings()">
-                            <label class="label">คำบรรยายใต้ชื่อ</label>
-                            <input type="text" id="setSubtitle" class="input-field" oninput="previewSettings()">
-                        </div>
-                    </div>
-
-                    <label class="label mt-4">ป้ายข้อความ 3 จุด (ใส่อีโมจิ + ข้อความ · เว้นว่างเพื่อซ่อน)</label>
-                    <div class="grid sm:grid-cols-3 gap-3">
-                        <input type="text" id="setChip1" class="input-field" oninput="previewSettings()" placeholder="❄️ ...">
-                        <input type="text" id="setChip2" class="input-field" oninput="previewSettings()" placeholder="🌡️ ...">
-                        <input type="text" id="setChip3" class="input-field" oninput="previewSettings()" placeholder="🔧 ...">
-                    </div>
-
-                    <label class="label mt-4">ไอคอนมุมขวา 3 จุด (ชื่อคลาส Font Awesome · เว้นว่างเพื่อซ่อน)</label>
-                    <div class="grid sm:grid-cols-3 gap-3">
-                        <input type="text" id="setIcon1" class="input-field" oninput="previewSettings()" placeholder="fa-snowflake">
-                        <input type="text" id="setIcon2" class="input-field" oninput="previewSettings()" placeholder="fa-fan">
-                        <input type="text" id="setIcon3" class="input-field" oninput="previewSettings()" placeholder="fa-wrench">
-                    </div>
-                    <div id="iconSuggest" class="flex flex-wrap gap-2 mt-2"></div>
-
-                    <div class="grid md:grid-cols-2 gap-4 mt-4">
-                        <div>
-                            <label class="label">ชื่อวิชา (ใช้ในข้อความแจ้งเตือน &amp; หน้า Top 10)</label>
-                            <input type="text" id="setSubject" class="input-field" oninput="previewSettings()">
-                        </div>
-                        <div>
-                            <label class="label">ชื่อครูผู้สอน (ลงท้ายข้อความแจ้งเตือน LINE)</label>
-                            <input type="text" id="setTeacher" class="input-field" oninput="previewSettings()">
-                        </div>
-                        <div>
-                            <label class="label">ชื่อแท็บเบราว์เซอร์</label>
-                            <input type="text" id="setPageTitle" class="input-field" oninput="previewSettings()">
-                        </div>
-                    </div>
-
-                    <div class="flex flex-col sm:flex-row gap-3 mt-6">
-                        <button onclick="saveSettings()" class="btn-primary flex-1"><i class="fas fa-floppy-disk mr-2"></i>บันทึกการตั้งค่า</button>
-                        <button onclick="resetSettings()" class="btn-secondary flex-1"><i class="fas fa-rotate-left mr-2"></i>คืนค่าเริ่มต้น</button>
-                    </div>
-                    <p class="text-xs text-slate-400 mt-3"><i class="fas fa-circle-info mr-1"></i>บันทึกไว้ในเบราว์เซอร์นี้ (localStorage) — หากเปลี่ยนเครื่อง/ล้างข้อมูลต้องตั้งใหม่ หรือแก้ค่า <code>DEFAULT_SETTINGS</code> ในไฟล์ index.html เพื่อให้เป็นค่าถาวรของทุกเครื่อง</p>
-                </div>
-
-                <!-- ==== ส่วนแจ้งเตือน LINE ==== -->
+                <!-- ==== แจ้งเตือนคะแนนรายบุคคล (ผ่าน LINE) ==== -->
                 <div class="flex items-center gap-3 pt-1">
                     <span class="w-9 h-9 flex items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 text-white shrink-0"><i class="fab fa-line"></i></span>
                     <h3 class="text-base sm:text-lg font-bold text-slate-800">แจ้งเตือนคะแนนรายบุคคล (ผ่าน LINE)</h3>
@@ -729,6 +624,133 @@
                     </div>
                     <p class="text-xs text-slate-400 mt-3"><i class="fas fa-circle-info mr-1"></i>ต้องตั้งค่า LINE Channel Access Token และปลายทางในไฟล์ Code.gs ก่อนจึงจะส่งได้จริง</p>
                 </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== ตั้งค่าระบบ (ครู/ผู้ดูแล) ===================== -->
+    <section id="notify" class="view py-10 sm:py-12 relative hidden">
+        <div class="container mx-auto px-4 max-w-4xl">
+
+            <!-- หน้าล็อกอินเข้าสู่การตั้งค่าระบบ -->
+            <div id="notifyLogin" class="frost-card rounded-3xl overflow-hidden max-w-md mx-auto">
+                <div class="bg-gradient-to-br from-sky-500 to-cyan-600 px-6 py-8 text-center text-white">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/20 backdrop-blur mb-3">
+                        <i class="fas fa-user-lock text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold">เข้าสู่ระบบตั้งค่า</h3>
+                    <p class="text-sm text-white/80 mt-1">สำหรับครูผู้สอน / ผู้ดูแลระบบ</p>
+                </div>
+                <div class="p-6 sm:p-8">
+                    <label class="label">รหัสผ่าน</label>
+                    <div class="relative">
+                        <input type="password" id="teacherPass" placeholder="••••••••" class="input-field pr-11"
+                               onkeypress="if(event.key==='Enter') teacherLogin()">
+                        <button type="button" onclick="togglePass()" aria-label="แสดง/ซ่อนรหัสผ่าน"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                            <i id="passEye" class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <label class="flex items-center gap-2 mt-3 text-sm text-slate-600 cursor-pointer">
+                        <input type="checkbox" id="rememberAdmin" class="w-4 h-4 accent-sky-600">
+                        จดจำการเข้าสู่ระบบในเครื่องนี้
+                    </label>
+                    <button onclick="teacherLogin()" class="btn-primary w-full mt-4"><i class="fas fa-unlock mr-2"></i>เข้าสู่ระบบ</button>
+                    <p id="loginError" class="text-red-500 text-sm mt-3 text-center hidden"></p>
+                </div>
+            </div>
+
+            <!-- Panel -->
+            <div id="notifyPanel" class="hidden space-y-5 sm:space-y-6">
+
+                <div class="flex items-center justify-between bg-white/75 rounded-2xl px-4 py-3 border border-white/60 shadow-sm">
+                    <span class="text-sm text-slate-600"><i class="fas fa-circle-check text-emerald-500 mr-2"></i>เข้าสู่ระบบตั้งค่าแล้ว</span>
+                    <button onclick="adminLogout()" class="text-sm font-medium text-slate-500 hover:text-red-500 transition"><i class="fas fa-right-from-bracket mr-1"></i>ออกจากระบบ</button>
+                </div>
+
+                <!-- ==== เปลี่ยนรหัสผ่าน ==== -->
+                <div class="frost-card rounded-3xl p-5 sm:p-6 md:p-8">
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="w-9 h-9 flex items-center justify-center rounded-xl bg-gradient-to-br from-rose-500 to-red-600 text-white shrink-0"><i class="fas fa-key"></i></span>
+                        <h3 class="text-base sm:text-lg font-bold text-slate-800">เปลี่ยนรหัสผ่าน</h3>
+                    </div>
+                    <div class="grid sm:grid-cols-3 gap-3">
+                        <div><label class="label">รหัสผ่านปัจจุบัน</label><input type="password" id="pwCur" class="input-field"></div>
+                        <div><label class="label">รหัสผ่านใหม่</label><input type="password" id="pwNew" class="input-field"></div>
+                        <div><label class="label">ยืนยันรหัสผ่านใหม่</label><input type="password" id="pwNew2" class="input-field"></div>
+                    </div>
+                    <button onclick="changePasscode()" class="btn-primary mt-5"><i class="fas fa-key mr-2"></i>บันทึกรหัสผ่านใหม่</button>
+                    <p class="text-xs text-slate-400 mt-3"><i class="fas fa-circle-info mr-1"></i>รหัสใหม่บันทึกที่เซิร์ฟเวอร์ (ชีต Config) — ใช้ได้ทันทีทุกเครื่อง ไม่ต้องแก้ไฟล์ · หากลืมรหัส ลบชีต "Config" ในสเปรดชีตเพื่อกลับไปใช้รหัสในโค้ด</p>
+                </div>
+
+                <!-- ==== ตั้งค่าส่วนหัว (Header) ==== -->
+                <div class="frost-card rounded-3xl p-5 sm:p-6 md:p-8">
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="w-9 h-9 flex items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-cyan-600 text-white shrink-0"><i class="fas fa-sliders"></i></span>
+                        <h3 class="text-base sm:text-lg font-bold text-slate-800">ตั้งค่าส่วนหัวของระบบ</h3>
+                    </div>
+                    <p class="text-xs sm:text-sm text-slate-500 mb-5">แก้ไขได้ทุกจุด — รูปโลโก้ ข้อความ ป้าย และไอคอน เพื่อนำระบบไปใช้กับรายวิชาอื่น (ตัวอย่างจะปรับทันทีขณะพิมพ์)</p>
+
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="label">โลโก้</label>
+                            <div class="flex items-center gap-3">
+                                <img id="setLogoPreview" alt="ตัวอย่างโลโก้" class="w-16 h-16 rounded-full ring-2 ring-slate-200 object-cover bg-slate-50 shrink-0">
+                                <div class="flex-1">
+                                    <label class="btn-secondary cursor-pointer inline-flex text-sm">
+                                        <i class="fas fa-upload mr-2"></i>อัปโหลดจากเครื่อง
+                                        <input type="file" accept="image/*" id="setLogoFile" onchange="handleLogoFile(this)" class="hidden">
+                                    </label>
+                                    <p class="text-[11px] text-slate-400 mt-1">รูปสี่เหลี่ยมจัตุรัสจะสวยที่สุด • ระบบย่อขนาดให้อัตโนมัติ</p>
+                                </div>
+                            </div>
+                            <input type="text" id="setLogo" class="input-field mt-2 text-xs" oninput="previewSettings()" placeholder="หรือวางลิงก์รูป https://...">
+                        </div>
+                        <div>
+                            <label class="label">ชื่อระบบ (บรรทัดใหญ่)</label>
+                            <input type="text" id="setTitle" class="input-field mb-3" oninput="previewSettings()">
+                            <label class="label">คำบรรยายใต้ชื่อ</label>
+                            <input type="text" id="setSubtitle" class="input-field" oninput="previewSettings()">
+                        </div>
+                    </div>
+
+                    <label class="label mt-4">ป้ายข้อความ 3 จุด (ใส่อีโมจิ + ข้อความ · เว้นว่างเพื่อซ่อน)</label>
+                    <div class="grid sm:grid-cols-3 gap-3">
+                        <input type="text" id="setChip1" class="input-field" oninput="previewSettings()" placeholder="❄️ ...">
+                        <input type="text" id="setChip2" class="input-field" oninput="previewSettings()" placeholder="🌡️ ...">
+                        <input type="text" id="setChip3" class="input-field" oninput="previewSettings()" placeholder="🔧 ...">
+                    </div>
+
+                    <label class="label mt-4">ไอคอนมุมขวา 3 จุด (ชื่อคลาส Font Awesome · เว้นว่างเพื่อซ่อน)</label>
+                    <div class="grid sm:grid-cols-3 gap-3">
+                        <input type="text" id="setIcon1" class="input-field" oninput="previewSettings()" placeholder="fa-snowflake">
+                        <input type="text" id="setIcon2" class="input-field" oninput="previewSettings()" placeholder="fa-fan">
+                        <input type="text" id="setIcon3" class="input-field" oninput="previewSettings()" placeholder="fa-wrench">
+                    </div>
+                    <div id="iconSuggest" class="flex flex-wrap gap-2 mt-2"></div>
+
+                    <div class="grid md:grid-cols-2 gap-4 mt-4">
+                        <div>
+                            <label class="label">ชื่อวิชา (ใช้ในข้อความแจ้งเตือน &amp; หน้า Top 10)</label>
+                            <input type="text" id="setSubject" class="input-field" oninput="previewSettings()">
+                        </div>
+                        <div>
+                            <label class="label">ชื่อครูผู้สอน (ลงท้ายข้อความแจ้งเตือน LINE)</label>
+                            <input type="text" id="setTeacher" class="input-field" oninput="previewSettings()">
+                        </div>
+                        <div>
+                            <label class="label">ชื่อแท็บเบราว์เซอร์</label>
+                            <input type="text" id="setPageTitle" class="input-field" oninput="previewSettings()">
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-3 mt-6">
+                        <button onclick="saveSettings()" class="btn-primary flex-1"><i class="fas fa-floppy-disk mr-2"></i>บันทึกการตั้งค่า</button>
+                        <button onclick="resetSettings()" class="btn-secondary flex-1"><i class="fas fa-rotate-left mr-2"></i>คืนค่าเริ่มต้น</button>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-3"><i class="fas fa-circle-info mr-1"></i>บันทึกไว้ในเบราว์เซอร์นี้ (localStorage) — หากเปลี่ยนเครื่อง/ล้างข้อมูลต้องตั้งใหม่ หรือแก้ค่า <code>DEFAULT_SETTINGS</code> ในไฟล์ index.html เพื่อให้เป็นค่าถาวรของทุกเครื่อง</p>
+                </div>
+
             </div>
         </div>
     </section>
@@ -834,6 +856,36 @@
         function updateLogoPreview(){
             const img = document.getElementById('setLogoPreview');
             if (img) img.src = (document.getElementById('setLogo')?.value || '').trim() || DEFAULT_SETTINGS.logo;
+        }
+
+        // อัปโหลดโลโก้จากเครื่อง -> ย่อขนาด -> เก็บเป็น data URI ใน setLogo
+        function handleLogoFile(input){
+            const f = input.files && input.files[0];
+            if (!f) return;
+            if (!/^image\//.test(f.type)) { toast('กรุณาเลือกไฟล์รูปภาพ', 'error'); return; }
+            const reader = new FileReader();
+            reader.onload = ev => {
+                const img = new Image();
+                img.onload = () => {
+                    const MAX = 320;
+                    let w = img.width, h = img.height;
+                    if (w >= h && w > MAX){ h = Math.round(h * MAX / w); w = MAX; }
+                    else if (h > w && h > MAX){ w = Math.round(w * MAX / h); h = MAX; }
+                    const c = document.createElement('canvas');
+                    c.width = w; c.height = h;
+                    c.getContext('2d').drawImage(img, 0, 0, w, h);
+                    let uri;
+                    try { uri = c.toDataURL('image/png'); } catch (e) { uri = ev.target.result; }
+                    if (uri.length > 180000) uri = c.toDataURL('image/jpeg', 0.85);
+                    document.getElementById('setLogo').value = uri;
+                    previewSettings();
+                    toast('อัปโหลดโลโก้แล้ว — กด "บันทึกการตั้งค่า" เพื่อจัดเก็บถาวร', 'success');
+                };
+                img.onerror = () => toast('ไฟล์รูปเสียหรือเปิดไม่ได้', 'error');
+                img.src = ev.target.result;
+            };
+            reader.onerror = () => toast('อ่านไฟล์ไม่สำเร็จ', 'error');
+            reader.readAsDataURL(f);
         }
 
         function previewSettings(){
@@ -1452,7 +1504,10 @@
 
         /* ==================== ล็อกอินสำหรับครู (ใช้ร่วมกัน: ตั้งค่าระบบ + คะแนนเก็บ) ==================== */
         const ADMIN_KEY = 'adminUnlocked';
+        const ADMIN_PASS_KEY = 'adminPass';
         let adminSession = false;   // ปลดล็อกในรอบการใช้งานนี้ (แม้ไม่ได้ติ๊ก "จดจำ")
+        let activePasscode = TEACHER_PASSCODE;   // รหัสที่ใช้ยืนยันกับเซิร์ฟเวอร์ (อาจถูกเปลี่ยนภายหลัง)
+        try { const _sp = localStorage.getItem(ADMIN_PASS_KEY); if (_sp) activePasscode = _sp; } catch (e) {}
 
         function isAdminUnlocked(){
             if (adminSession) return true;
@@ -1468,15 +1523,27 @@
             eye.className = show ? 'fas fa-eye-slash' : 'fas fa-eye';
         }
 
-        function tryUnlock(pass, remember, errElId){
+        async function tryUnlock(pass, remember, errElId){
             const e = document.getElementById(errElId);
-            if (pass !== TEACHER_PASSCODE){
+            let ok = (pass === TEACHER_PASSCODE);   // รหัสค่าเริ่มต้น — ผ่านทันที
+            if (!ok && !API_URL.includes('YOUR_SCRIPT_ID')){
+                // เผื่อรหัสถูกเปลี่ยนไว้ที่เซิร์ฟเวอร์ — ตรวจสอบกับ Code.gs
+                try {
+                    const res = await fetch(API_URL, { method:'POST', body:new URLSearchParams({ action:'verifyPasscode', payload: JSON.stringify({ passcode: pass }) }) });
+                    const d = await res.json();
+                    ok = !!d.success;
+                } catch (_) {}
+            }
+            if (!ok){
                 if (e){ e.textContent = 'รหัสผ่านไม่ถูกต้อง'; e.classList.remove('hidden'); }
                 return false;
             }
             if (e) e.classList.add('hidden');
             adminSession = true;
-            if (remember){ try { localStorage.setItem(ADMIN_KEY, '1'); } catch (err) {} }
+            activePasscode = pass;
+            if (remember){
+                try { localStorage.setItem(ADMIN_KEY, '1'); localStorage.setItem(ADMIN_PASS_KEY, pass); } catch (err) {}
+            }
             return true;
         }
 
@@ -1490,32 +1557,30 @@
             if (!unlocked) return;
             if (view === 'notify'){
                 fillSettingsForm();
-                (async () => {
-                    if (!allStudentsData.length){ toast('กำลังโหลดรายชื่อผู้เรียน...', 'info'); await fetchAllStudents(); }
-                    populateNotifyRooms();
-                })();
+                const _pc = document.getElementById('pwCur'); if (_pc) _pc.value = activePasscode;
             } else if (view === 'scores'){
                 initScoresPanel();
             }
         }
 
-        function teacherLogin(){
+        async function teacherLogin(){
             const pass = document.getElementById('teacherPass').value.trim();
             const remember = document.getElementById('rememberAdmin')?.checked;
-            if (!tryUnlock(pass, remember, 'loginError')) return;
+            if (!(await tryUnlock(pass, remember, 'loginError'))) return;
             showLockedView('notify');
         }
 
-        function scoresLogin(){
+        async function scoresLogin(){
             const pass = document.getElementById('scoresPass').value.trim();
             const remember = document.getElementById('rememberScores')?.checked;
-            if (!tryUnlock(pass, remember, 'scoresLoginError')) return;
+            if (!(await tryUnlock(pass, remember, 'scoresLoginError'))) return;
             showLockedView('scores');
         }
 
         function adminLogout(){
             adminSession = false;
-            try { localStorage.removeItem(ADMIN_KEY); } catch (e) {}
+            activePasscode = TEACHER_PASSCODE;
+            try { localStorage.removeItem(ADMIN_KEY); localStorage.removeItem(ADMIN_PASS_KEY); } catch (e) {}
             ['notify', 'scores'].forEach(v => {
                 document.getElementById(v + 'Panel')?.classList.add('hidden');
                 document.getElementById(v + 'Login')?.classList.remove('hidden');
@@ -1523,7 +1588,25 @@
             ['teacherPass', 'scoresPass'].forEach(id => { const i = document.getElementById(id); if (i){ i.value = ''; i.type = 'password'; } });
             ['passEye', 'scoresEye'].forEach(id => { const e = document.getElementById(id); if (e) e.className = 'fas fa-eye'; });
             ['rememberAdmin', 'rememberScores'].forEach(id => { const c = document.getElementById(id); if (c) c.checked = false; });
+            ['pwCur', 'pwNew', 'pwNew2'].forEach(id => { const i = document.getElementById(id); if (i) i.value = ''; });
             toast('ออกจากระบบแล้ว', 'info');
+        }
+
+        async function changePasscode(){
+            const cur = document.getElementById('pwCur').value.trim();
+            const n1  = document.getElementById('pwNew').value.trim();
+            const n2  = document.getElementById('pwNew2').value.trim();
+            if (n1.length < 4) return toast('รหัสผ่านใหม่ต้องยาวอย่างน้อย 4 ตัวอักษร', 'error');
+            if (n1 !== n2)     return toast('รหัสผ่านใหม่ทั้งสองช่องไม่ตรงกัน', 'error');
+            const res = await postAdmin('changePasscode', { passcode: cur, newPasscode: n1 });
+            if (res && res.success){
+                activePasscode = n1;
+                try { if (localStorage.getItem(ADMIN_PASS_KEY)) localStorage.setItem(ADMIN_PASS_KEY, n1); } catch (e) {}
+                document.getElementById('pwCur').value = n1;
+                document.getElementById('pwNew').value = '';
+                document.getElementById('pwNew2').value = '';
+                toast('เปลี่ยนรหัสผ่านเรียบร้อย ✅', 'success');
+            }
         }
 
         /* ==================== คะแนนเก็บ: กรอก/แก้ไขคะแนน + หัวข้อ + เพิ่มผู้เรียน ==================== */
@@ -1534,7 +1617,7 @@
         async function postAdmin(action, payload){
             if (API_URL.includes('YOUR_SCRIPT_ID')){ toast('ยังไม่ได้ตั้งค่า API_URL', 'error'); return null; }
             try {
-                payload.passcode = TEACHER_PASSCODE;
+                if (payload.passcode == null) payload.passcode = activePasscode;
                 const res = await fetch(API_URL, { method: 'POST', body: new URLSearchParams({ action, payload: JSON.stringify(payload) }) });
                 const data = await res.json();
                 if (!data.success) toast('ไม่สำเร็จ: ' + (data.error || 'ไม่ทราบสาเหตุ'), 'error');
@@ -1550,6 +1633,7 @@
             await fetchAllStudents();
             dashboardLoaded = false;
             top10Loaded = false;
+            if (document.getElementById('notifyRoom')) populateNotifyRooms();
         }
 
         let headerDraft = [];   // ร่างหัวข้อที่กำลังแก้ (เพิ่ม/ลบช่องได้ก่อนบันทึก)
@@ -1559,6 +1643,7 @@
             headerDraft = [];
             renderHeaderEditor();
             renderScoreRoomTabs();
+            populateNotifyRooms();   // สำหรับส่วน "แจ้งเตือนคะแนนรายบุคคล (ผ่าน LINE)"
         }
 
         function syncHeaderDraft(){
@@ -1849,7 +1934,7 @@
             btns.forEach(b => b.disabled = true);
             toast('กำลังส่งแจ้งเตือน...', 'info');
             try{
-                payload.passcode = TEACHER_PASSCODE;
+                payload.passcode = activePasscode;
                 payload.target = document.getElementById('notifyTarget').value.trim();
                 const res = await fetch(API_URL, {
                     method:'POST',
