@@ -1,0 +1,1910 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0ea5e9">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ระบบคะแนน">
+    <title>ระบบตรวจสอบคะแนนออนไลน์ | งานเครื่องทำความเย็นและเครื่องปรับอากาศ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root{
+            --ice-50:#f0f9ff; --ice-100:#e0f2fe; --ice-300:#7dd3fc;
+            --ice-500:#0ea5e9; --ice-600:#0891b2; --navy:#0f172a;
+            --safe-b: env(safe-area-inset-bottom, 0px);
+            --safe-t: env(safe-area-inset-top, 0px);
+        }
+        *{ font-family:'Prompt', sans-serif; }
+        html{ -webkit-text-size-adjust:100%; }
+        body{ background:#eef6fb; color:#1e293b; -webkit-tap-highlight-color:transparent; overscroll-behavior-y:none; }
+        .table-responsive, .no-scrollbar, #scoreTableWrap{ -webkit-overflow-scrolling:touch; }
+
+        /* พื้นหลังไล่สีโทนเย็น (เครื่องทำความเย็น/ปรับอากาศ) */
+        body::before{
+            content:''; position:fixed; inset:0; z-index:-2;
+            background:linear-gradient(-45deg,#0ea5e9,#0369a1,#06b6d4,#0891b2,#38bdf8,#0284c7);
+            background-size:400% 400%;
+            animation:gradientShift 22s ease infinite;
+        }
+        body::after{
+            content:''; position:fixed; inset:0; z-index:-1;
+            background:
+                radial-gradient(circle at 15% 80%, rgba(56,189,248,.30) 0%, transparent 45%),
+                radial-gradient(circle at 85% 15%, rgba(14,165,233,.28) 0%, transparent 45%),
+                radial-gradient(circle at 50% 45%, rgba(255,255,255,.22) 0%, transparent 55%);
+            animation:floatingOrbs 26s ease-in-out infinite;
+        }
+        @keyframes gradientShift{ 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+        @keyframes floatingOrbs{ 0%,100%{transform:translate(0,0)} 33%{transform:translate(24px,-24px)} 66%{transform:translate(-18px,18px)} }
+
+        /* การ์ดกระจกน้ำแข็ง */
+        .frost-card{
+            background:rgba(255,255,255,.86);
+            backdrop-filter:blur(14px);
+            border:1px solid rgba(255,255,255,.65);
+            box-shadow:0 20px 45px -22px rgba(15,23,42,.35);
+        }
+        .glass-nav{
+            background:rgba(255,255,255,.92);
+            backdrop-filter:blur(18px);
+            border-bottom:1px solid rgba(255,255,255,.4);
+        }
+        .header-gradient{
+            background:linear-gradient(135deg,#0ea5e9 0%,#0369a1 45%,#0891b2 100%);
+            position:relative; overflow:hidden;
+        }
+        .header-gradient::before{
+            content:''; position:absolute; top:0; left:-100%; width:100%; height:100%;
+            background:linear-gradient(90deg,transparent,rgba(255,255,255,.22),transparent);
+            animation:shimmer 4s infinite;
+        }
+        @keyframes shimmer{ 0%{left:-100%} 100%{left:100%} }
+
+        .card-hover{ transition:transform .3s ease, box-shadow .3s ease; }
+        .card-hover:hover{ transform:translateY(-6px); box-shadow:0 28px 55px -20px rgba(15,23,42,.35); }
+
+        /* องค์ประกอบฟอร์ม/ปุ่ม */
+        .input-field{
+            width:100%; padding:.7rem 1rem; border:2px solid #e2e8f0; border-radius:.9rem;
+            background:#fff; transition:.2s; font-size:.95rem; color:#1e293b;
+        }
+        .input-field:focus{ outline:none; border-color:var(--ice-500); box-shadow:0 0 0 4px rgba(14,165,233,.14); }
+        .label{ display:block; font-size:.8rem; font-weight:600; color:#475569; margin-bottom:.4rem; }
+        .btn-primary{
+            display:inline-flex; align-items:center; justify-content:center;
+            background:linear-gradient(135deg,#0ea5e9,#0891b2); color:#fff;
+            padding:.75rem 1.5rem; border-radius:.9rem; font-weight:600; transition:.2s;
+            box-shadow:0 12px 24px -8px rgba(8,145,178,.55); border:none; cursor:pointer;
+        }
+        .btn-primary:hover{ transform:translateY(-2px); box-shadow:0 16px 30px -8px rgba(8,145,178,.65); }
+        .btn-primary:disabled{ opacity:.55; cursor:not-allowed; transform:none; }
+        .btn-secondary{
+            display:inline-flex; align-items:center; justify-content:center;
+            background:#fff; color:#0891b2; border:2px solid #a5f3fc;
+            padding:.75rem 1.5rem; border-radius:.9rem; font-weight:600; transition:.2s; cursor:pointer;
+        }
+        .btn-secondary:hover{ background:#ecfeff; }
+        .btn-secondary:disabled{ opacity:.55; cursor:not-allowed; }
+
+        .step-badge{
+            width:2rem; height:2rem; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+            border-radius:.75rem; background:linear-gradient(135deg,#0ea5e9,#0891b2);
+            color:#fff; font-weight:700; font-size:.9rem;
+        }
+        .nav-pill{
+            display:flex; align-items:center; gap:.5rem; padding:.6rem 1.25rem; border-radius:9999px;
+            font-weight:500; color:#0369a1; background:#e0f2fe; transition:.2s; cursor:pointer; border:none;
+        }
+        .nav-pill:hover{ background:#0ea5e9; color:#fff; transform:translateY(-2px); }
+        .nav-pill-active,
+        .nav-pill-active:hover{
+            background:linear-gradient(135deg,#0ea5e9,#0891b2); color:#fff;
+            box-shadow:0 8px 18px -6px rgba(8,145,178,.55); transform:none;
+        }
+        .view{ animation:viewIn .28s ease; }
+        @keyframes viewIn{ from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:translateY(0)} }
+        .room-tab{ background:#e0f2fe; color:#0369a1; border:none; cursor:pointer; }
+        .room-tab:hover{ background:#bae6fd; }
+        .room-tab-active,
+        .room-tab-active:hover{ background:linear-gradient(135deg,#0ea5e9,#0891b2); color:#fff; box-shadow:0 6px 14px -6px rgba(8,145,178,.55); }
+
+        .grade-A{ background:linear-gradient(135deg,#4ade80,#22c55e); }
+        .grade-B{ background:linear-gradient(135deg,#60a5fa,#3b82f6); }
+        .grade-C{ background:linear-gradient(135deg,#fbbf24,#f59e0b); }
+        .grade-D{ background:linear-gradient(135deg,#fb7185,#e11d48); }
+        .grade-F{ background:linear-gradient(135deg,#6b7280,#374151); }
+
+        .loading{ display:none; }
+        .loading.show{ display:block; }
+
+        @keyframes float{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+        .float-animation{ animation:float 3s ease-in-out infinite; }
+        @keyframes sparkle{ 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.15)} }
+        .sparkle{ animation:sparkle 2.4s ease-in-out infinite; }
+        .animate-pulse-slow{ animation:pulse 3s infinite; }
+        .animate-bounce-slow{ animation:bounce 2.4s infinite; }
+
+        .table-responsive{ overflow-x:auto; }
+        .table-responsive table{ min-width:1180px; }
+
+        .particles{ position:fixed; inset:0; pointer-events:none; z-index:-1; }
+        .particle{ position:absolute; background:rgba(255,255,255,.55); border-radius:50%; animation:floatUp 16s infinite linear; }
+        @keyframes floatUp{
+            0%{ opacity:0; transform:translateY(100vh) scale(0); }
+            10%,90%{ opacity:1; }
+            100%{ opacity:0; transform:translateY(-100px) scale(1); }
+        }
+
+        /* Toast */
+        #toastWrap{ position:fixed; top:1rem; right:1rem; left:1rem; z-index:9999; display:flex; flex-direction:column; align-items:flex-end; gap:.6rem; }
+        @keyframes slideIn{ from{opacity:0;transform:translateX(30px)} to{opacity:1;transform:translateX(0)} }
+        .toast{ display:flex; align-items:center; gap:.75rem; color:#fff; padding:.8rem 1.15rem; border-radius:1rem; max-width:100%;
+            box-shadow:0 18px 40px -12px rgba(15,23,42,.45); animation:slideIn .3s ease; transition:opacity .3s, transform .3s; font-size:.9rem; }
+
+        /* ซ่อนแถบเลื่อน (ใช้กับเมนูแบบเลื่อนแนวนอนบนมือถือ) */
+        .no-scrollbar{ -ms-overflow-style:none; scrollbar-width:none; }
+        .no-scrollbar::-webkit-scrollbar{ display:none; }
+
+        /* ปรับสำหรับหน้าจอมือถือ */
+        @media (max-width:640px){
+            body::before{ animation-duration:30s; }
+            .frost-card{ box-shadow:0 12px 30px -18px rgba(15,23,42,.4); }
+            .nav-pill{ padding:.5rem .85rem; font-size:.82rem; }
+            .input-field{ font-size:16px; }        /* กัน iOS ซูมอัตโนมัติเวลาแตะช่องกรอก */
+            .table-responsive table{ min-width:0; }
+            .btn-primary, .btn-secondary{ width:100%; padding:.75rem 1rem; }
+            section{ padding-top:1.5rem; padding-bottom:1.75rem; }
+        }
+
+        /* ===== รูปแบบแอปมือถือ ===== */
+        @media (max-width:767px){
+            /* เว้นที่ให้แถบเมนูล่าง */
+            body{ padding-bottom: calc(4.5rem + var(--safe-b)); }
+            header.header-gradient{ padding-top:1rem; padding-bottom:1rem; }
+        }
+
+        /* แถบหัวแบบแอป (sticky) — แสดงเฉพาะมือถือ */
+        .mobile-appbar{
+            position:sticky; top:0; z-index:55;
+            display:flex; align-items:center; gap:.6rem;
+            padding: calc(.65rem + var(--safe-t)) 1rem .65rem;
+            background:linear-gradient(135deg,#0ea5e9,#0369a1);
+            color:#fff; box-shadow:0 3px 14px -6px rgba(15,23,42,.4);
+        }
+        .mobile-appbar img{ width:1.9rem; height:1.9rem; border-radius:9999px; object-fit:cover; background:rgba(255,255,255,.15); flex-shrink:0; }
+
+        /* แถบเมนูล่างแบบแอป */
+        .bottom-nav{
+            position:fixed; left:0; right:0; bottom:0; z-index:60;
+            display:flex; align-items:stretch;
+            background:rgba(255,255,255,.97); backdrop-filter:blur(18px);
+            border-top:1px solid rgba(15,23,42,.08);
+            padding-bottom: var(--safe-b);
+            box-shadow:0 -6px 24px -14px rgba(15,23,42,.3);
+        }
+        .bottom-nav button{
+            flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+            padding:.5rem 0 .45rem; border:none; background:none; cursor:pointer;
+            color:#94a3b8; font-size:.66rem; font-weight:600; line-height:1;
+            transition:color .15s ease;
+        }
+        .bottom-nav button i{ font-size:1.15rem; transition:transform .15s ease; }
+        .bottom-nav button.bn-active{ color:#0ea5e9; }
+        .bottom-nav button.bn-active i{ transform:translateY(-2px) scale(1.08); }
+        .bottom-nav button.bn-active::before{
+            content:''; position:absolute; top:0; width:2rem; height:3px; border-radius:0 0 3px 3px;
+            background:linear-gradient(90deg,#0ea5e9,#0891b2);
+        }
+        .bottom-nav button{ position:relative; }
+    </style>
+</head>
+<body class="min-h-screen relative overflow-x-hidden">
+
+    <!-- Toast container -->
+    <div id="toastWrap"></div>
+
+    <!-- Header -->
+    <header class="header-gradient text-white py-6 shadow-xl">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 text-center sm:text-left">
+                    <img id="hdrLogo" src="https://i.postimg.cc/3xWMgCbt/Neutral-Modern-Illustrated-Community-Sports-Carnival-Flyer-7-x-10-6-6-x-9-9-6-x-9.png"
+                         alt="โลโก้" class="w-16 h-16 sm:w-20 sm:h-20 md:w-28 md:h-28 rounded-full shadow-lg ring-4 ring-white/30 shrink-0 object-cover bg-white/10">
+                    <div>
+                        <h1 id="hdrTitle" class="text-base sm:text-lg md:text-2xl font-bold leading-tight">ระบบตรวจสอบคะแนนผู้เรียน</h1>
+                        <p id="hdrSubtitle" class="text-xs sm:text-sm md:text-base opacity-95">วิชา งานเครื่องทำความเย็นและเครื่องปรับอากาศ • ระดับ ปวช.2</p>
+                        <div id="hdrChips" class="text-[11px] sm:text-xs md:text-sm opacity-90 mt-1 flex flex-wrap justify-center sm:justify-start gap-x-3 gap-y-1">
+                            <span>❄️ ระบบทำความเย็น</span>
+                            <span>🌡️ ปรับอากาศ</span>
+                            <span>🔧 ติดตั้ง–ซ่อมบำรุง</span>
+                        </div>
+                    </div>
+                </div>
+                <div id="hdrIcons" class="flex items-center gap-4 text-2xl md:text-3xl">
+                    <i class="fas fa-snowflake animate-pulse-slow"></i>
+                    <i class="fas fa-fan float-animation"></i>
+                    <i class="fas fa-temperature-low animate-bounce-slow"></i>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- แถบหัวแบบแอป (มือถือเท่านั้น) -->
+    <div class="mobile-appbar md:hidden">
+        <img id="mobileAppbarLogo" src="https://i.postimg.cc/3xWMgCbt/Neutral-Modern-Illustrated-Community-Sports-Carnival-Flyer-7-x-10-6-6-x-9-9-6-x-9.png" alt="โลโก้">
+        <span id="mobileAppbarTitle" class="font-semibold text-sm truncate">ค้นหาคะแนน</span>
+    </div>
+
+    <div class="particles" id="particles"></div>
+
+    <!-- เมนูบน (เดสก์ท็อป) -->
+    <nav class="glass-nav shadow-lg sticky top-0 z-50 hidden md:block">
+        <div class="container mx-auto px-2 sm:px-4">
+            <div class="flex flex-nowrap sm:flex-wrap justify-start sm:justify-center gap-2 sm:gap-3 py-3 overflow-x-auto no-scrollbar">
+                <button data-view="search" onclick="showView('search')" class="nav-pill shrink-0"><i class="fas fa-magnifying-glass sparkle"></i><span class="whitespace-nowrap">ค้นหาคะแนน</span></button>
+                <button data-view="dashboard" onclick="showView('dashboard')" class="nav-pill shrink-0"><i class="fas fa-chart-column sparkle"></i><span class="whitespace-nowrap">แดชบอร์ด</span></button>
+                <button data-view="top10" onclick="showView('top10')" class="nav-pill shrink-0"><i class="fas fa-trophy sparkle"></i><span class="whitespace-nowrap">Top 10</span></button>
+                <button data-view="scores" onclick="showView('scores')" class="nav-pill shrink-0"><i class="fas fa-table-list sparkle"></i><span class="whitespace-nowrap">คะแนนเก็บ</span></button>
+                <button data-view="notify" onclick="showView('notify')" class="nav-pill shrink-0"><i class="fas fa-gear sparkle"></i><span class="whitespace-nowrap">ตั้งค่าระบบ</span></button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Search Section -->
+    <section id="search" class="view py-10 sm:py-12">
+        <div class="container mx-auto px-4">
+            <div class="max-w-2xl mx-auto">
+                <div class="frost-card rounded-3xl p-6 sm:p-8 card-hover">
+                    <div class="text-center mb-6 sm:mb-8">
+                        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-sky-500 to-cyan-600 text-white text-2xl mb-4 shadow-lg shadow-cyan-500/30">
+                            <i class="fas fa-magnifying-glass"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-slate-800 mb-2">ค้นหาคะแนนผู้เรียน</h2>
+                        <p class="text-slate-500">กรอกเลขประจำตัวผู้เรียน 5 หลัก</p>
+                    </div>
+
+                    <div class="space-y-5">
+                        <div>
+                            <label class="label">เลขประจำตัวผู้เรียน</label>
+                            <input type="text" id="studentId" inputmode="numeric" placeholder="เช่น 40001, 40002, 40003"
+                                   class="input-field text-center text-base sm:text-lg tracking-wider sm:tracking-widest">
+                        </div>
+                        <button onclick="searchStudent()" class="btn-primary w-full">
+                            <i class="fas fa-magnifying-glass mr-2"></i>ค้นหาคะแนน
+                        </button>
+                        <div class="loading text-center py-4">
+                            <i class="fas fa-spinner fa-spin text-2xl text-sky-500"></i>
+                            <p class="text-slate-500 mt-2">กำลังค้นหาข้อมูล...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Student Result Section (แสดงใต้หน้า "ค้นหาคะแนน") -->
+    <section id="studentResult" class="py-6 hidden">
+        <div class="container mx-auto px-4">
+            <div class="frost-card rounded-3xl p-5 sm:p-6 card-hover">
+                <h3 class="text-lg sm:text-xl font-bold text-slate-800 mb-5 sm:mb-6 flex items-center">
+                    <i class="fas fa-user-graduate text-sky-500 mr-3"></i>ผลคะแนนรายบุคคล
+                </h3>
+                <!-- การ์ดสรุป (แสดงทุกขนาดจอ / เป็นมุมมองหลักบนมือถือ) -->
+                <div id="studentSummaryCard" class="mb-6"></div>
+                <!-- ตารางเต็ม: แสดงเฉพาะจอใหญ่ -->
+                <div class="table-responsive hidden lg:block">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr id="searchTheadRow" class="bg-gradient-to-r from-sky-500 to-cyan-600 text-white">
+                                <th class="px-3 py-3 text-center rounded-tl-xl">เลขที่</th>
+                                <th class="px-3 py-3 text-center">เลขประจำตัว</th>
+                                <th class="px-3 py-3 text-center">ชื่อ-นามสกุล</th>
+                                <th class="px-3 py-3 text-center">ห้อง</th>
+                                <th class="px-3 py-3 text-center">ความรู้ทั่วไป (10)</th>
+                                <th class="px-3 py-3 text-center">ตัดดัดท่อ (10)</th>
+                                <th class="px-3 py-3 text-center">บานขยาย (10)</th>
+                                <th class="px-3 py-3 text-center">กลางภาค (10)</th>
+                                <th class="px-3 py-3 text-center">ตรวจสอบ (10)</th>
+                                <th class="px-3 py-3 text-center">ต่อวงจร (10)</th>
+                                <th class="px-3 py-3 text-center">ปฏิบัติงาน (10)</th>
+                                <th class="px-3 py-3 text-center">ปลายภาค (10)</th>
+                                <th class="px-3 py-3 text-center">จิตพิสัย (20)</th>
+                                <th class="px-3 py-3 text-center rounded-tr-xl">คะแนนรวม</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentTableBody"></tbody>
+                    </table>
+                </div>
+                <div id="studentBreakdown" class="mt-6"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Dashboard Section -->
+    <section id="dashboard" class="view py-10 sm:py-12 relative hidden">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-10">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600 text-white text-2xl mb-4 shadow-lg shadow-cyan-500/30">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <h2 class="text-2xl md:text-3xl font-bold text-slate-800 mb-2">แดชบอร์ดสถิติรายห้อง</h2>
+                <p class="text-sm sm:text-base text-slate-500">สรุปผลการเรียนของผู้เรียนแต่ละห้อง</p>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 mb-8">
+                <div class="frost-card rounded-2xl p-4 sm:p-6 card-hover text-center">
+                    <div class="bg-gradient-to-br from-sky-500 to-cyan-600 w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                        <i class="fas fa-users text-white text-lg sm:text-2xl"></i>
+                    </div>
+                    <div class="text-xl sm:text-2xl font-bold text-slate-800" id="totalStudents">0</div>
+                    <div class="text-xs sm:text-sm text-slate-500">ผู้เรียนทั้งหมด</div>
+                </div>
+                <div class="frost-card rounded-2xl p-4 sm:p-6 card-hover text-center">
+                    <div class="bg-gradient-to-br from-emerald-500 to-green-600 w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                        <i class="fas fa-chart-line text-white text-lg sm:text-2xl"></i>
+                    </div>
+                    <div class="text-xl sm:text-2xl font-bold text-emerald-600" id="overallAverage">0</div>
+                    <div class="text-xs sm:text-sm text-slate-500">คะแนนเฉลี่ยรวม</div>
+                </div>
+                <div class="frost-card rounded-2xl p-4 sm:p-6 card-hover text-center">
+                    <div class="bg-gradient-to-br from-amber-500 to-orange-600 w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                        <i class="fas fa-circle-check text-white text-lg sm:text-2xl"></i>
+                    </div>
+                    <div class="text-xl sm:text-2xl font-bold text-amber-600" id="passRate">0%</div>
+                    <div class="text-xs sm:text-sm text-slate-500">อัตราผ่าน (≥50)</div>
+                </div>
+                <div class="frost-card rounded-2xl p-4 sm:p-6 card-hover text-center">
+                    <div class="bg-gradient-to-br from-violet-500 to-fuchsia-600 w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                        <i class="fas fa-star text-white text-lg sm:text-2xl"></i>
+                    </div>
+                    <div class="text-xl sm:text-2xl font-bold text-violet-600" id="excellentRate">0%</div>
+                    <div class="text-xs sm:text-sm text-slate-500">เกรด A (≥80)</div>
+                </div>
+            </div>
+
+            <div class="frost-card rounded-3xl p-5 sm:p-8 mb-8">
+                <div class="flex items-center justify-between mb-5 sm:mb-6">
+                    <h3 class="text-lg sm:text-xl font-bold text-slate-800 flex items-center">
+                        <i class="fas fa-chart-simple text-cyan-500 mr-3"></i>การกระจายของเกรดทั้งหมด
+                    </h3>
+                    <span id="gradeTotalBadge" class="text-xs sm:text-sm text-slate-500 bg-slate-100 rounded-full px-3 py-1"></span>
+                </div>
+                <div class="space-y-2.5 sm:space-y-3" id="gradeDistribution"></div>
+            </div>
+
+            <!-- สถิติรายห้อง — เลือกดูทีละห้อง -->
+            <div class="frost-card rounded-3xl p-5 sm:p-8 mb-8">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5 sm:mb-6">
+                    <h3 class="text-lg sm:text-xl font-bold text-slate-800 flex items-center">
+                        <i class="fas fa-school text-sky-500 mr-3"></i>สถิติรายห้อง
+                    </h3>
+                    <div id="roomTabs" class="flex flex-nowrap gap-2 overflow-x-auto no-scrollbar -mx-1 px-1"></div>
+                </div>
+                <div id="roomStatsView" class="space-y-2">
+                    <div class="loading show text-center py-6"><i class="fas fa-spinner fa-spin text-sky-500 text-xl"></i></div>
+                </div>
+            </div>
+
+            <div class="frost-card rounded-3xl p-5 sm:p-8">
+                <h3 class="text-lg sm:text-xl font-bold text-slate-800 mb-5 sm:mb-6 flex items-center">
+                    <i class="fas fa-graduation-cap text-sky-500 mr-3"></i>เกณฑ์การประเมินผล
+                </h3>
+                <div class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                    <div class="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl border-l-4 border-green-500">
+                        <div class="flex items-center justify-between mb-2"><span class="text-lg font-bold text-green-700">A</span><span class="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-medium">80-100</span></div>
+                        <div class="text-sm text-green-600 font-medium">ดีเยี่ยม</div><div class="text-xs text-green-500 mt-1">เกรดพอยต์ 4.0</div>
+                    </div>
+                    <div class="bg-gradient-to-br from-sky-50 to-cyan-50 p-4 rounded-xl border-l-4 border-sky-500">
+                        <div class="flex items-center justify-between mb-2"><span class="text-lg font-bold text-sky-700">B+</span><span class="bg-sky-500 text-white px-2 py-1 rounded-full text-xs font-medium">75-79</span></div>
+                        <div class="text-sm text-sky-600 font-medium">ดีมาก</div><div class="text-xs text-sky-500 mt-1">เกรดพอยต์ 3.5</div>
+                    </div>
+                    <div class="bg-gradient-to-br from-yellow-50 to-amber-50 p-4 rounded-xl border-l-4 border-yellow-500">
+                        <div class="flex items-center justify-between mb-2"><span class="text-lg font-bold text-yellow-700">B</span><span class="bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-medium">70-74</span></div>
+                        <div class="text-sm text-yellow-600 font-medium">ดี</div><div class="text-xs text-yellow-500 mt-1">เกรดพอยต์ 3.0</div>
+                    </div>
+                    <div class="bg-gradient-to-br from-orange-50 to-red-50 p-4 rounded-xl border-l-4 border-orange-500">
+                        <div class="flex items-center justify-between mb-2"><span class="text-lg font-bold text-orange-700">C+</span><span class="bg-orange-500 text-white px-2 py-1 rounded-full text-xs font-medium">65-69</span></div>
+                        <div class="text-sm text-orange-600 font-medium">ค่อนข้างดี</div><div class="text-xs text-orange-500 mt-1">เกรดพอยต์ 2.5</div>
+                    </div>
+                    <div class="bg-gradient-to-br from-red-50 to-pink-50 p-4 rounded-xl border-l-4 border-red-400">
+                        <div class="flex items-center justify-between mb-2"><span class="text-lg font-bold text-red-700">C</span><span class="bg-red-400 text-white px-2 py-1 rounded-full text-xs font-medium">60-64</span></div>
+                        <div class="text-sm text-red-600 font-medium">น่าพอใจ</div><div class="text-xs text-red-500 mt-1">เกรดพอยต์ 2.0</div>
+                    </div>
+                    <div class="bg-gradient-to-br from-red-50 to-rose-50 p-4 rounded-xl border-l-4 border-red-500">
+                        <div class="flex items-center justify-between mb-2"><span class="text-lg font-bold text-red-700">D+</span><span class="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-medium">55-59</span></div>
+                        <div class="text-sm text-red-600 font-medium">พอใช้</div><div class="text-xs text-red-500 mt-1">เกรดพอยต์ 1.5</div>
+                    </div>
+                    <div class="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-xl border-l-4 border-red-600">
+                        <div class="flex items-center justify-between mb-2"><span class="text-lg font-bold text-red-700">D</span><span class="bg-red-600 text-white px-2 py-1 rounded-full text-xs font-medium">50-54</span></div>
+                        <div class="text-sm text-red-600 font-medium">ผ่านขั้นต่ำ</div><div class="text-xs text-red-500 mt-1">เกรดพอยต์ 1.0</div>
+                    </div>
+                    <div class="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border-l-4 border-gray-500">
+                        <div class="flex items-center justify-between mb-2"><span class="text-lg font-bold text-gray-700">F</span><span class="bg-gray-500 text-white px-2 py-1 rounded-full text-xs font-medium">0-49</span></div>
+                        <div class="text-sm text-gray-600 font-medium">ต่ำกว่าเกณฑ์</div><div class="text-xs text-gray-500 mt-1">เกรดพอยต์ 0.0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Top 10 Section -->
+    <section id="top10" class="view py-10 sm:py-12 relative hidden">
+        <div class="container mx-auto px-4 max-w-4xl">
+            <div class="text-center mb-7">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-yellow-600 text-white text-2xl mb-4 shadow-lg shadow-amber-500/30 animate-bounce-slow">
+                    <i class="fas fa-trophy"></i>
+                </div>
+                <h2 class="text-2xl md:text-3xl font-bold text-slate-800 mb-2">ทำเนียบคนเก่ง · Top 10</h2>
+                <p id="top10Subtitle" class="text-sm sm:text-base text-slate-500 px-2">ผู้เรียนที่ทำคะแนนสูงสุดในวิชางานเครื่องทำความเย็นและเครื่องปรับอากาศ</p>
+            </div>
+
+            <!-- ตัวกรอง: ทั้งหมด / รายห้อง -->
+            <div id="top10Rooms" class="flex flex-nowrap justify-start sm:justify-center gap-2 overflow-x-auto no-scrollbar mb-7 -mx-1 px-1"></div>
+
+            <!-- โพเดียม 3 อันดับแรก -->
+            <div id="podium" class="mb-6 sm:mb-8 hidden"></div>
+
+            <!-- รายชื่อทั้งหมด -->
+            <div class="frost-card rounded-3xl p-4 sm:p-6">
+                <div id="top10List" class="space-y-2.5 sm:space-y-3">
+                    <div class="loading show text-center py-10">
+                        <i class="fas fa-spinner fa-spin text-3xl text-amber-500"></i>
+                        <p class="text-slate-500 mt-3">กำลังโหลดข้อมูลผู้เรียนดีเด่น...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== คะแนนเก็บ (กรอก/แก้ไขคะแนน) ===================== -->
+    <section id="scores" class="view py-10 sm:py-12 relative hidden">
+        <div class="container mx-auto px-4 max-w-6xl">
+
+            <!-- ล็อกอิน (รหัสเดียวกับตั้งค่าระบบ) -->
+            <div id="scoresLogin" class="frost-card rounded-3xl overflow-hidden max-w-md mx-auto">
+                <div class="bg-gradient-to-br from-sky-500 to-cyan-600 px-6 py-8 text-center text-white">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/20 backdrop-blur mb-3">
+                        <i class="fas fa-table-list text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold">คะแนนเก็บ</h3>
+                    <p class="text-sm text-white/80 mt-1">กรอก / แก้ไขคะแนนผู้เรียน · สำหรับครูผู้สอน</p>
+                </div>
+                <div class="p-6 sm:p-8">
+                    <label class="label">รหัสผ่าน</label>
+                    <div class="relative">
+                        <input type="password" id="scoresPass" placeholder="••••••••" class="input-field pr-11"
+                               onkeypress="if(event.key==='Enter') scoresLogin()">
+                        <button type="button" onclick="togglePass('scoresPass','scoresEye')" aria-label="แสดง/ซ่อนรหัสผ่าน"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                            <i id="scoresEye" class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <label class="flex items-center gap-2 mt-3 text-sm text-slate-600 cursor-pointer">
+                        <input type="checkbox" id="rememberScores" class="w-4 h-4 accent-sky-600">
+                        จดจำการเข้าสู่ระบบในเครื่องนี้
+                    </label>
+                    <button onclick="scoresLogin()" class="btn-primary w-full mt-4"><i class="fas fa-unlock mr-2"></i>เข้าสู่ระบบ</button>
+                    <p id="scoresLoginError" class="text-red-500 text-sm mt-3 text-center hidden"></p>
+                </div>
+            </div>
+
+            <!-- แผงกรอกคะแนน -->
+            <div id="scoresPanel" class="hidden space-y-5 sm:space-y-6">
+
+                <div class="flex items-center justify-between bg-white/75 rounded-2xl px-4 py-3 border border-white/60 shadow-sm">
+                    <span class="text-sm text-slate-600"><i class="fas fa-circle-check text-emerald-500 mr-2"></i>เข้าสู่ระบบแล้ว</span>
+                    <button onclick="adminLogout()" class="text-sm font-medium text-slate-500 hover:text-red-500 transition"><i class="fas fa-right-from-bracket mr-1"></i>ออกจากระบบ</button>
+                </div>
+
+                <!-- แก้ไขหัวข้อคะแนน -->
+                <div class="frost-card rounded-3xl p-5 sm:p-6 md:p-8">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="w-9 h-9 flex items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white shrink-0"><i class="fas fa-heading"></i></span>
+                        <h3 class="text-base sm:text-lg font-bold text-slate-800">แก้ไขหัวข้อคะแนน</h3>
+                    </div>
+                    <p class="text-xs sm:text-sm text-slate-500 mb-4">ตั้งชื่อหัวข้อและคะแนนเต็มของแต่ละช่อง — บันทึกลงหัวตารางในชีตโดยตรง</p>
+                    <div id="headerEditor" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+                    <button onclick="saveHeaders()" class="btn-primary mt-5"><i class="fas fa-floppy-disk mr-2"></i>บันทึกหัวข้อ</button>
+                </div>
+
+                <!-- กรอก/แก้ไขคะแนน -->
+                <div class="frost-card rounded-3xl p-4 sm:p-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                        <div class="flex items-center gap-3">
+                            <span class="w-9 h-9 flex items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-cyan-600 text-white shrink-0"><i class="fas fa-pen-to-square"></i></span>
+                            <h3 class="text-base sm:text-lg font-bold text-slate-800">กรอก / แก้ไขคะแนน</h3>
+                        </div>
+                        <div id="scoreRoomTabs" class="flex flex-nowrap gap-2 overflow-x-auto no-scrollbar -mx-1 px-1"></div>
+                    </div>
+                    <div id="scoreTableWrap" class="overflow-x-auto"></div>
+                    <div class="flex flex-col sm:flex-row gap-3 mt-4">
+                        <button onclick="saveScores()" id="saveScoresBtn" class="btn-primary flex-1"><i class="fas fa-floppy-disk mr-2"></i>บันทึกคะแนนห้องนี้</button>
+                        <span id="scoreDirty" class="hidden text-sm text-amber-600 self-center"><i class="fas fa-circle-exclamation mr-1"></i>มีการแก้ไขที่ยังไม่บันทึก</span>
+                    </div>
+                </div>
+
+                <!-- เพิ่มผู้เรียน -->
+                <div class="frost-card rounded-3xl p-5 sm:p-6 md:p-8">
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="w-9 h-9 flex items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 text-white shrink-0"><i class="fas fa-user-plus"></i></span>
+                        <h3 class="text-base sm:text-lg font-bold text-slate-800">เพิ่มผู้เรียน</h3>
+                    </div>
+                    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                        <div><label class="label">เลขที่</label><input type="number" id="addNo" class="input-field" placeholder="อัตโนมัติ"></div>
+                        <div><label class="label">เลขประจำตัว</label><input type="text" id="addId" class="input-field" placeholder="40001"></div>
+                        <div><label class="label">ชื่อ-นามสกุล</label><input type="text" id="addName" class="input-field" placeholder="นาย..."></div>
+                        <div><label class="label">ห้อง</label><input type="text" id="addRoom" class="input-field" placeholder="ปวช.2/1"></div>
+                    </div>
+                    <button onclick="addStudent()" class="btn-primary mt-5"><i class="fas fa-plus mr-2"></i>เพิ่มผู้เรียน</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== ตั้งค่าระบบ (ครู/ผู้ดูแล) ===================== -->
+    <section id="notify" class="view py-10 sm:py-12 relative hidden">
+        <div class="container mx-auto px-4 max-w-4xl">
+
+            <!-- หน้าล็อกอินเข้าสู่การตั้งค่าระบบ -->
+            <div id="notifyLogin" class="frost-card rounded-3xl overflow-hidden max-w-md mx-auto">
+                <div class="bg-gradient-to-br from-sky-500 to-cyan-600 px-6 py-8 text-center text-white">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/20 backdrop-blur mb-3">
+                        <i class="fas fa-user-lock text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold">เข้าสู่ระบบตั้งค่า</h3>
+                    <p class="text-sm text-white/80 mt-1">สำหรับครูผู้สอน / ผู้ดูแลระบบ</p>
+                </div>
+                <div class="p-6 sm:p-8">
+                    <label class="label">รหัสผ่าน</label>
+                    <div class="relative">
+                        <input type="password" id="teacherPass" placeholder="••••••••" class="input-field pr-11"
+                               onkeypress="if(event.key==='Enter') teacherLogin()">
+                        <button type="button" onclick="togglePass()" aria-label="แสดง/ซ่อนรหัสผ่าน"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                            <i id="passEye" class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <label class="flex items-center gap-2 mt-3 text-sm text-slate-600 cursor-pointer">
+                        <input type="checkbox" id="rememberAdmin" class="w-4 h-4 accent-sky-600">
+                        จดจำการเข้าสู่ระบบในเครื่องนี้
+                    </label>
+                    <button onclick="teacherLogin()" class="btn-primary w-full mt-4"><i class="fas fa-unlock mr-2"></i>เข้าสู่ระบบ</button>
+                    <p id="loginError" class="text-red-500 text-sm mt-3 text-center hidden"></p>
+                </div>
+            </div>
+
+            <!-- Panel -->
+            <div id="notifyPanel" class="hidden space-y-5 sm:space-y-6">
+
+                <div class="flex items-center justify-between bg-white/75 rounded-2xl px-4 py-3 border border-white/60 shadow-sm">
+                    <span class="text-sm text-slate-600"><i class="fas fa-circle-check text-emerald-500 mr-2"></i>เข้าสู่ระบบตั้งค่าแล้ว</span>
+                    <button onclick="adminLogout()" class="text-sm font-medium text-slate-500 hover:text-red-500 transition"><i class="fas fa-right-from-bracket mr-1"></i>ออกจากระบบ</button>
+                </div>
+
+                <!-- ==== ตั้งค่าส่วนหัว (Header) ==== -->
+                <div class="frost-card rounded-3xl p-5 sm:p-6 md:p-8">
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="w-9 h-9 flex items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-cyan-600 text-white shrink-0"><i class="fas fa-sliders"></i></span>
+                        <h3 class="text-base sm:text-lg font-bold text-slate-800">ตั้งค่าส่วนหัวของระบบ</h3>
+                    </div>
+                    <p class="text-xs sm:text-sm text-slate-500 mb-5">แก้ไขได้ทุกจุด — รูปโลโก้ ข้อความ ป้าย และไอคอน เพื่อนำระบบไปใช้กับรายวิชาอื่น (ตัวอย่างจะปรับทันทีขณะพิมพ์)</p>
+
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="label">ลิงก์รูปโลโก้ (URL)</label>
+                            <input type="text" id="setLogo" class="input-field" oninput="previewSettings()" placeholder="https://...">
+                            <div class="mt-2 flex items-center gap-3">
+                                <img id="setLogoPreview" alt="ตัวอย่างโลโก้" class="w-14 h-14 rounded-full ring-2 ring-slate-200 object-cover bg-slate-50 shrink-0">
+                                <span class="text-xs text-slate-400">ตัวอย่างโลโก้ที่จะแสดง</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="label">ชื่อระบบ (บรรทัดใหญ่)</label>
+                            <input type="text" id="setTitle" class="input-field mb-3" oninput="previewSettings()">
+                            <label class="label">คำบรรยายใต้ชื่อ</label>
+                            <input type="text" id="setSubtitle" class="input-field" oninput="previewSettings()">
+                        </div>
+                    </div>
+
+                    <label class="label mt-4">ป้ายข้อความ 3 จุด (ใส่อีโมจิ + ข้อความ · เว้นว่างเพื่อซ่อน)</label>
+                    <div class="grid sm:grid-cols-3 gap-3">
+                        <input type="text" id="setChip1" class="input-field" oninput="previewSettings()" placeholder="❄️ ...">
+                        <input type="text" id="setChip2" class="input-field" oninput="previewSettings()" placeholder="🌡️ ...">
+                        <input type="text" id="setChip3" class="input-field" oninput="previewSettings()" placeholder="🔧 ...">
+                    </div>
+
+                    <label class="label mt-4">ไอคอนมุมขวา 3 จุด (ชื่อคลาส Font Awesome · เว้นว่างเพื่อซ่อน)</label>
+                    <div class="grid sm:grid-cols-3 gap-3">
+                        <input type="text" id="setIcon1" class="input-field" oninput="previewSettings()" placeholder="fa-snowflake">
+                        <input type="text" id="setIcon2" class="input-field" oninput="previewSettings()" placeholder="fa-fan">
+                        <input type="text" id="setIcon3" class="input-field" oninput="previewSettings()" placeholder="fa-wrench">
+                    </div>
+                    <div id="iconSuggest" class="flex flex-wrap gap-2 mt-2"></div>
+
+                    <div class="grid md:grid-cols-2 gap-4 mt-4">
+                        <div>
+                            <label class="label">ชื่อวิชา (ใช้ในข้อความแจ้งเตือน &amp; หน้า Top 10)</label>
+                            <input type="text" id="setSubject" class="input-field" oninput="previewSettings()">
+                        </div>
+                        <div>
+                            <label class="label">ชื่อครูผู้สอน (ลงท้ายข้อความแจ้งเตือน LINE)</label>
+                            <input type="text" id="setTeacher" class="input-field" oninput="previewSettings()">
+                        </div>
+                        <div>
+                            <label class="label">ชื่อแท็บเบราว์เซอร์</label>
+                            <input type="text" id="setPageTitle" class="input-field" oninput="previewSettings()">
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-3 mt-6">
+                        <button onclick="saveSettings()" class="btn-primary flex-1"><i class="fas fa-floppy-disk mr-2"></i>บันทึกการตั้งค่า</button>
+                        <button onclick="resetSettings()" class="btn-secondary flex-1"><i class="fas fa-rotate-left mr-2"></i>คืนค่าเริ่มต้น</button>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-3"><i class="fas fa-circle-info mr-1"></i>บันทึกไว้ในเบราว์เซอร์นี้ (localStorage) — หากเปลี่ยนเครื่อง/ล้างข้อมูลต้องตั้งใหม่ หรือแก้ค่า <code>DEFAULT_SETTINGS</code> ในไฟล์ index.html เพื่อให้เป็นค่าถาวรของทุกเครื่อง</p>
+                </div>
+
+                <!-- ==== ส่วนแจ้งเตือน LINE ==== -->
+                <div class="flex items-center gap-3 pt-1">
+                    <span class="w-9 h-9 flex items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 text-white shrink-0"><i class="fab fa-line"></i></span>
+                    <h3 class="text-base sm:text-lg font-bold text-slate-800">แจ้งเตือนคะแนนรายบุคคล (ผ่าน LINE)</h3>
+                </div>
+
+                <!-- Step 1 -->
+                <div class="frost-card rounded-3xl p-5 sm:p-6 md:p-8">
+                    <div class="flex items-center gap-3 mb-5 sm:mb-6">
+                        <span class="step-badge">1</span>
+                        <h3 class="text-base sm:text-lg font-bold text-slate-800">เลือกผู้เรียน</h3>
+                    </div>
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="label">ห้องเรียน</label>
+                            <select id="notifyRoom" class="input-field" onchange="onNotifyRoomChange()"></select>
+                        </div>
+                        <div>
+                            <label class="label">ชื่อผู้เรียน</label>
+                            <select id="notifyStudent" class="input-field" onchange="onNotifyStudentChange()"></select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div id="notifyChecklistWrap" class="frost-card rounded-3xl p-5 sm:p-6 md:p-8 hidden">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="step-badge">2</span>
+                        <h3 class="text-base sm:text-lg font-bold text-slate-800">เลือกงาน/คะแนนที่ต้องการแจ้งเตือน</h3>
+                    </div>
+                    <p class="text-xs sm:text-sm text-slate-500 mb-5 sm:ml-11">ระบบติ๊กรายการที่ได้ 0 คะแนน (ขาดส่ง) ให้อัตโนมัติ — ครูปรับได้</p>
+                    <div id="notifyChecklist" class="grid sm:grid-cols-2 gap-3"></div>
+                </div>
+
+                <!-- Step 3 -->
+                <div id="notifyOptionsWrap" class="frost-card rounded-3xl p-5 sm:p-6 md:p-8 hidden">
+                    <div class="flex items-center gap-3 mb-5 sm:mb-6">
+                        <span class="step-badge">3</span>
+                        <h3 class="text-base sm:text-lg font-bold text-slate-800">รายละเอียดการแจ้งเตือน</h3>
+                    </div>
+                    <div class="grid md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="label">กำหนดส่งงาน (ไม่บังคับ)</label>
+                            <input type="date" id="notifyDue" class="input-field" onchange="updatePreview()">
+                        </div>
+                        <div>
+                            <label class="label">ระดับความเร่งด่วน</label>
+                            <select id="notifyLevel" class="input-field" onchange="updatePreview()">
+                                <option value="แจ้งเพื่อทราบ">แจ้งเพื่อทราบ</option>
+                                <option value="ติดตามงาน" selected>ติดตามงาน</option>
+                                <option value="เร่งด่วน">เร่งด่วน</option>
+                            </select>
+                        </div>
+                    </div>
+                    <label class="label">ข้อความเพิ่มเติมจากครู (ไม่บังคับ)</label>
+                    <textarea id="notifyNote" rows="2" class="input-field" oninput="updatePreview()"
+                              placeholder="เช่น ให้มาพบครูที่ห้องพักครูแผนกช่างเครื่องทำความเย็นฯ ภายในวันศุกร์นี้"></textarea>
+                    <label class="label mt-4">ปลายทาง LINE (ไม่บังคับ — เว้นว่างเพื่อส่งเข้ากลุ่มเริ่มต้น)</label>
+                    <input type="text" id="notifyTarget" class="input-field" placeholder="Uxxxxxxxx (ผู้ใช้) หรือ Cxxxxxxxx (กลุ่ม)">
+                </div>
+
+                <!-- Preview + Send -->
+                <div id="notifyPreviewWrap" class="frost-card rounded-3xl p-5 sm:p-6 md:p-8 hidden">
+                    <h3 class="text-base sm:text-lg font-bold text-slate-800 mb-4"><i class="fab fa-line text-green-500 mr-2"></i>ตัวอย่างข้อความที่จะส่ง</h3>
+                    <pre id="notifyPreview" class="whitespace-pre-wrap break-words text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-2xl p-3 sm:p-4 text-slate-700 overflow-x-auto" style="font-family:'Prompt',sans-serif;"></pre>
+                    <div class="flex flex-col sm:flex-row gap-3 mt-5">
+                        <button onclick="sendIndividualNotify()" class="btn-primary flex-1"><i class="fab fa-line mr-2"></i>ส่งแจ้งเตือนรายบุคคล</button>
+                        <button onclick="sendRoomMissingSummary()" class="btn-secondary flex-1"><i class="fas fa-users mr-2"></i>แจ้งสรุปทั้งห้อง (เฉพาะคนที่ขาดงาน)</button>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-3"><i class="fas fa-circle-info mr-1"></i>ต้องตั้งค่า LINE Channel Access Token และปลายทางในไฟล์ Code.gs ก่อนจึงจะส่งได้จริง</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-white py-8">
+        <div class="container mx-auto px-4 text-center space-y-2">
+            <div><i class="fas fa-code text-sky-400 mr-2"></i><span class="text-base sm:text-lg font-medium">พัฒนาโดย ครูเต้ย :: รังสรรค์ ลอยแก้ว</span></div>
+            <div class="text-sm sm:text-base"><i class="fas fa-envelope text-sky-400 mr-2"></i><span>fietete41@gmail.com</span></div>
+            <div class="text-xs sm:text-sm text-slate-400">© 2025 ระบบตรวจสอบคะแนนออนไลน์</div>
+        </div>
+    </footer>
+
+    <!-- เมนูล่างแบบแอป (มือถือเท่านั้น) -->
+    <nav class="bottom-nav md:hidden">
+        <button data-view="search" onclick="showView('search')"><i class="fas fa-magnifying-glass"></i><span>ค้นหา</span></button>
+        <button data-view="dashboard" onclick="showView('dashboard')"><i class="fas fa-chart-column"></i><span>แดชบอร์ด</span></button>
+        <button data-view="top10" onclick="showView('top10')"><i class="fas fa-trophy"></i><span>Top 10</span></button>
+        <button data-view="scores" onclick="showView('scores')"><i class="fas fa-table-list"></i><span>คะแนนเก็บ</span></button>
+        <button data-view="notify" onclick="showView('notify')"><i class="fas fa-gear"></i><span>ตั้งค่า</span></button>
+    </nav>
+
+    <script>
+        /* ==================== CONFIG ==================== */
+        const API_URL = "https://script.google.com/macros/s/AKfycby4ntkFQjK2pMOW5AAAqt9QZS2cJwdpZDITbZGhf7ujPc7slfOcxVhOQs0LiSqDJm1XUQ/exec";
+        const TEACHER_PASSCODE = 'kru-teuy-2568'; // ⚠️ ต้องตรงกับค่า TEACHER_PASSCODE ใน Code.gs
+
+        /* ---- ค่าเริ่มต้นของส่วนหัว/ข้อมูลระบบ (ปรับได้จากหน้า "ตั้งค่าระบบ" หรือแก้ตรงนี้ให้เป็นค่าถาวร) ---- */
+        const DEFAULT_SETTINGS = {
+            logo: 'https://i.postimg.cc/3xWMgCbt/Neutral-Modern-Illustrated-Community-Sports-Carnival-Flyer-7-x-10-6-6-x-9-9-6-x-9.png',
+            title: 'ระบบตรวจสอบคะแนนผู้เรียน',
+            subtitle: 'วิชา งานเครื่องทำความเย็นและเครื่องปรับอากาศ • ระดับ ปวช.2',
+            chips: ['❄️ ระบบทำความเย็น', '🌡️ ปรับอากาศ', '🔧 ติดตั้ง–ซ่อมบำรุง'],
+            icons: ['fa-snowflake', 'fa-fan', 'fa-temperature-low'],
+            subject: 'งานเครื่องทำความเย็นและเครื่องปรับอากาศ',
+            teacher: 'ครูเต้ย (รังสรรค์ ลอยแก้ว)',
+            pageTitle: 'ระบบตรวจสอบคะแนนออนไลน์ | งานเครื่องทำความเย็นและเครื่องปรับอากาศ'
+        };
+        const SETTINGS_KEY = 'scoreAppSettings';
+        let settings = loadSettings();
+
+        function loadSettings(){
+            try { return { ...DEFAULT_SETTINGS, ...(JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}) }; }
+            catch (e) { return { ...DEFAULT_SETTINGS }; }
+        }
+
+        function escHtml(str){
+            return String(str == null ? '' : str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+        function safeIconClass(str){  // อนุญาตเฉพาะชื่อคลาส Font Awesome
+            return String(str || '').replace(/[^a-zA-Z0-9 _-]/g, '').trim();
+        }
+
+        function applySettings(){
+            const s = settings;
+            const anim = ['animate-pulse-slow', 'float-animation', 'animate-bounce-slow'];
+            const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || ''; };
+
+            const logo = document.getElementById('hdrLogo');
+            if (logo && s.logo) logo.src = s.logo;
+            const mLogo = document.getElementById('mobileAppbarLogo');
+            if (mLogo && s.logo) mLogo.src = s.logo;
+            setText('hdrTitle', s.title);
+            setText('hdrSubtitle', s.subtitle);
+
+            const chips = document.getElementById('hdrChips');
+            if (chips) chips.innerHTML = (s.chips || []).filter(c => c && c.trim())
+                .map(c => `<span>${escHtml(c)}</span>`).join('');
+
+            const icons = document.getElementById('hdrIcons');
+            if (icons) icons.innerHTML = (s.icons || []).map(safeIconClass).filter(Boolean)
+                .map((ic, i) => `<i class="fas ${ic} ${anim[i % 3]}"></i>`).join('');
+
+            if (s.pageTitle) document.title = s.pageTitle;
+            setText('top10Subtitle', 'ผู้เรียนที่ทำคะแนนสูงสุดในวิชา' + (s.subject || ''));
+        }
+
+        function fillSettingsForm(){
+            const s = settings;
+            const v = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+            v('setLogo', s.logo);           v('setTitle', s.title);       v('setSubtitle', s.subtitle);
+            v('setChip1', (s.chips||[])[0]); v('setChip2', (s.chips||[])[1]); v('setChip3', (s.chips||[])[2]);
+            v('setIcon1', (s.icons||[])[0]); v('setIcon2', (s.icons||[])[1]); v('setIcon3', (s.icons||[])[2]);
+            v('setSubject', s.subject);     v('setTeacher', s.teacher);   v('setPageTitle', s.pageTitle);
+            renderIconSuggest();
+            updateLogoPreview();
+        }
+
+        function readSettingsForm(){
+            const g = id => (document.getElementById(id)?.value || '').trim();
+            return {
+                logo: g('setLogo') || DEFAULT_SETTINGS.logo,
+                title: g('setTitle') || DEFAULT_SETTINGS.title,
+                subtitle: g('setSubtitle'),
+                chips: [g('setChip1'), g('setChip2'), g('setChip3')],
+                icons: [g('setIcon1'), g('setIcon2'), g('setIcon3')],
+                subject: g('setSubject') || DEFAULT_SETTINGS.subject,
+                teacher: g('setTeacher') || DEFAULT_SETTINGS.teacher,
+                pageTitle: g('setPageTitle') || DEFAULT_SETTINGS.pageTitle
+            };
+        }
+
+        function updateLogoPreview(){
+            const img = document.getElementById('setLogoPreview');
+            if (img) img.src = (document.getElementById('setLogo')?.value || '').trim() || DEFAULT_SETTINGS.logo;
+        }
+
+        function previewSettings(){
+            settings = { ...settings, ...readSettingsForm() };
+            applySettings();
+            updateLogoPreview();
+        }
+
+        function saveSettings(){
+            settings = { ...DEFAULT_SETTINGS, ...readSettingsForm() };
+            try {
+                localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+                applySettings();
+                toast('บันทึกการตั้งค่าเรียบร้อย ✅', 'success');
+            } catch (e) {
+                toast('บันทึกไม่สำเร็จ: ' + e.message, 'error');
+            }
+        }
+
+        function resetSettings(){
+            try { localStorage.removeItem(SETTINGS_KEY); } catch (e) {}
+            settings = { ...DEFAULT_SETTINGS };
+            applySettings();
+            fillSettingsForm();
+            toast('คืนค่าเริ่มต้นแล้ว', 'info');
+        }
+
+        const ICON_CHOICES = ['fa-snowflake','fa-fan','fa-temperature-low','fa-wind','fa-fire','fa-bolt','fa-plug',
+            'fa-wrench','fa-screwdriver-wrench','fa-gauge-high','fa-gears','fa-microchip','fa-flask','fa-atom',
+            'fa-microscope','fa-book','fa-calculator','fa-laptop-code','fa-palette','fa-music','fa-dumbbell',
+            'fa-seedling','fa-car','fa-utensils','fa-hammer','fa-toolbox','fa-lightbulb','fa-globe'];
+
+        function renderIconSuggest(){
+            const wrap = document.getElementById('iconSuggest');
+            if (!wrap) return;
+            wrap.innerHTML = ICON_CHOICES.map(ic =>
+                `<button type="button" onclick="pickIcon('${ic}')" title="${ic}"
+                         class="w-9 h-9 rounded-lg bg-slate-100 hover:bg-sky-500 hover:text-white text-slate-600 transition flex items-center justify-center">
+                    <i class="fas ${ic}"></i>
+                 </button>`).join('');
+        }
+
+        function pickIcon(ic){
+            const ids = ['setIcon1','setIcon2','setIcon3'];
+            let target = ids.map(id => document.getElementById(id)).find(el => el && !el.value.trim());
+            if (!target) target = document.getElementById('setIcon3');
+            if (target){ target.value = ic; previewSettings(); target.focus(); }
+        }
+
+        const DEFAULT_ASSIGNMENTS = [
+            { key:'score1', name:'ความรู้ทั่วไป', max:10 },
+            { key:'score2', name:'ตัดดัดท่อ',     max:10 },
+            { key:'score3', name:'บานขยาย',       max:10 },
+            { key:'score4', name:'กลางภาค',       max:10 },
+            { key:'score5', name:'ตรวจสอบ',       max:10 },
+            { key:'score6', name:'ต่อวงจร',       max:10 },
+            { key:'score7', name:'ปฏิบัติงาน',    max:10 },
+            { key:'score8', name:'ปลายภาค',       max:10 },
+            { key:'score9', name:'จิตพิสัย',      max:20 }
+        ];
+        // หัวข้อคะแนนจริงจะถูกโหลดจากชีต (แถวหัวตาราง) แล้วทับค่านี้
+        let ASSIGNMENTS = DEFAULT_ASSIGNMENTS.map(a => ({ ...a }));
+
+        function applyHeaders(headers){
+            if (!Array.isArray(headers) || !headers.length) return;
+            ASSIGNMENTS = headers.map((h, i) => ({
+                key: 'score' + (i + 1),
+                name: (h && h.name) ? String(h.name) : (DEFAULT_ASSIGNMENTS[i] ? DEFAULT_ASSIGNMENTS[i].name : ('หัวข้อ ' + (i + 1))),
+                max: (h && h.max) ? parseFloat(h.max) : (DEFAULT_ASSIGNMENTS[i] ? DEFAULT_ASSIGNMENTS[i].max : 10)
+            }));
+            renderSearchThead();
+        }
+
+        function renderSearchThead(){
+            const tr = document.getElementById('searchTheadRow');
+            if (!tr) return;
+            tr.innerHTML =
+                '<th class="px-3 py-3 text-center rounded-tl-xl">เลขที่</th>' +
+                '<th class="px-3 py-3 text-center">เลขประจำตัว</th>' +
+                '<th class="px-3 py-3 text-center">ชื่อ-นามสกุล</th>' +
+                '<th class="px-3 py-3 text-center">ห้อง</th>' +
+                ASSIGNMENTS.map(a => `<th class="px-3 py-3 text-center">${escHtml(a.name)} (${a.max})</th>`).join('') +
+                '<th class="px-3 py-3 text-center rounded-tr-xl">คะแนนรวม</th>';
+        }
+
+        let allStudentsData = [];
+        let dashboardLoaded = false;
+        let top10Loaded = false;
+        const VIEWS = ['search', 'dashboard', 'top10', 'scores', 'notify'];
+        const VIEW_LABELS = {
+            search: 'ค้นหาคะแนน', dashboard: 'แดชบอร์ด', top10: 'Top 10 · ทำเนียบคนเก่ง',
+            scores: 'คะแนนเก็บ', notify: 'ตั้งค่าระบบ'
+        };
+
+        /* ==================== UTIL ==================== */
+        function scrollToSection(id){ document.getElementById(id).scrollIntoView({ behavior:'smooth' }); }
+
+        /* สลับหน้าแบบ "หน้าใครหน้ามัน" — แสดงทีละหน้าจากแถบเมนู */
+        function showView(name){
+            if (!VIEWS.includes(name)) name = 'search';
+
+            document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+            document.getElementById(name).classList.remove('hidden');
+
+            // หน้าผลการค้นหาจะโผล่เฉพาะตอนอยู่หน้า "ค้นหาคะแนน" และมีผลลัพธ์ค้างอยู่
+            const sr = document.getElementById('studentResult');
+            sr.classList.toggle('hidden', !(name === 'search' && sr.dataset.hasResult === '1'));
+
+            // ไฮไลต์ปุ่มเมนูที่เลือก (เมนูบน)
+            document.querySelectorAll('.nav-pill').forEach(b => b.classList.remove('nav-pill-active'));
+            const btn = document.querySelector(`.nav-pill[data-view="${name}"]`);
+            if (btn){ btn.classList.add('nav-pill-active'); btn.scrollIntoView({ block:'nearest', inline:'center', behavior:'smooth' }); }
+
+            // ไฮไลต์เมนูล่าง (มือถือ) + อัปเดตชื่อหน้าในแถบหัวแอป
+            document.querySelectorAll('.bottom-nav button').forEach(b => b.classList.remove('bn-active'));
+            const bb = document.querySelector(`.bottom-nav button[data-view="${name}"]`);
+            if (bb) bb.classList.add('bn-active');
+            const appTitle = document.getElementById('mobileAppbarTitle');
+            if (appTitle) appTitle.textContent = VIEW_LABELS[name] || (settings.title || 'ระบบคะแนน');
+
+            // โหลดข้อมูลเฉพาะตอนเปิดหน้านั้นครั้งแรก
+            if (name === 'dashboard' && !dashboardLoaded){ dashboardLoaded = true; loadDashboard(); }
+            if (name === 'top10' && !top10Loaded){ top10Loaded = true; loadTop10(); }
+
+            // หน้าที่ต้องล็อกอิน (รหัสเดียวกัน) — ถ้าปลดล็อกแล้วจะเข้าแผงทันที
+            if (name === 'notify' || name === 'scores') showLockedView(name);
+
+            if (location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        window.addEventListener('hashchange', () => showView((location.hash || '#search').slice(1)));
+
+        function getGrade(score){
+            if (score >= 80) return { grade:'A',  gpa:'4.0', description:'ดีเยี่ยม',     color:'text-green-600' };
+            if (score >= 75) return { grade:'B+', gpa:'3.5', description:'ดีมาก',        color:'text-sky-600' };
+            if (score >= 70) return { grade:'B',  gpa:'3.0', description:'ดี',           color:'text-sky-500' };
+            if (score >= 65) return { grade:'C+', gpa:'2.5', description:'ค่อนข้างดี',   color:'text-yellow-600' };
+            if (score >= 60) return { grade:'C',  gpa:'2.0', description:'น่าพอใจ',      color:'text-yellow-500' };
+            if (score >= 55) return { grade:'D+', gpa:'1.5', description:'พอใช้',        color:'text-orange-500' };
+            if (score >= 50) return { grade:'D',  gpa:'1.0', description:'ผ่านขั้นต่ำ',  color:'text-red-500' };
+            return { grade:'F', gpa:'0.0', description:'ต่ำกว่าเกณฑ์', color:'text-red-600' };
+        }
+
+        function showLoading(id){ const el = document.querySelector(`#${id} .loading`); if (el) el.classList.add('show'); }
+        function hideLoading(id){ const el = document.querySelector(`#${id} .loading`); if (el) el.classList.remove('show'); }
+
+        function toast(msg, type='info'){
+            const wrap = document.getElementById('toastWrap');
+            const map = {
+                success:{ bg:'linear-gradient(135deg,#10b981,#059669)', icon:'check-circle' },
+                error:  { bg:'linear-gradient(135deg,#f43f5e,#e11d48)', icon:'circle-exclamation' },
+                info:   { bg:'linear-gradient(135deg,#0ea5e9,#0891b2)', icon:'circle-info' }
+            };
+            const c = map[type] || map.info;
+            const el = document.createElement('div');
+            el.className = 'toast';
+            el.style.background = c.bg;
+            el.innerHTML = `<i class="fas fa-${c.icon} text-lg"></i><span class="font-medium">${msg}</span>`;
+            wrap.appendChild(el);
+            setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateX(24px)'; setTimeout(() => el.remove(), 300); }, 4200);
+        }
+
+        function formatThaiDate(iso){
+            const d = new Date(iso + 'T00:00:00');
+            if (isNaN(d)) return iso;
+            const m = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+            return d.getDate() + ' ' + m[d.getMonth()] + ' ' + (d.getFullYear() + 543);
+        }
+
+        /* ==================== API : อ่านข้อมูล ==================== */
+        async function fetchAllStudents(){
+            try{
+                if (API_URL.includes('YOUR_SCRIPT_ID')){
+                    allStudentsData = generateSampleData();
+                    return allStudentsData;
+                }
+                const res = await fetch(`${API_URL}?action=getAllStudents`);
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+                if (data.success){
+                    allStudentsData = (data.data.students || []).map(s => ({
+                        ...s,
+                        no: parseInt(s.no) || 0,
+                        studentId: String(s.studentId).trim(),
+                        name: String(s.name).trim(),
+                        room: String(s.room).trim(),
+                        score1:+s.score1||0, score2:+s.score2||0, score3:+s.score3||0,
+                        score4:+s.score4||0, score5:+s.score5||0, score6:+s.score6||0,
+                        score7:+s.score7||0, score8:+s.score8||0, score9:+s.score9||0,
+                        totalScore:+s.totalScore||0
+                    }));
+                    applyHeaders(data.data.headers);
+                    return allStudentsData;
+                }
+                console.error('API Error:', data.error);
+                allStudentsData = generateSampleData();
+                return allStudentsData;
+            }catch(err){
+                console.error('Error fetching students:', err);
+                allStudentsData = generateSampleData();
+                return allStudentsData;
+            }
+        }
+
+        function generateSampleData(){
+            const rooms = ['ปวช.2/1','ปวช.2/2','ปวช.2/3','ปวช.2/4'];
+            const first = ['สมชาย','สมศักดิ์','สมหมาย','สมปอง','สมคิด','สมหวัง','สมบูรณ์','สมเกียรติ','สมจิตร','สมนึก','สมรักษ์','สมชาติ','สมพงษ์','สมยศ','สมเดช','สมศรี','สมบัติ','สมชัย','สมเจตน์','สมพร','สมทรง','สมหญิง','สมบูรณ์','สมใจ','สมพิศ'];
+            const last  = ['ใจดี','เรียนดี','ขยันเรียน','ทำงานดี','พยายาม','ก้าวหน้า','เพียรพยายาม','ตั้งใจเรียน','พัฒนาตน','ต้องสู้','ไม่ย่อท้อ','ลองใหม่','มุ่งมั่น','ฝึกฝน','พัฒนา','เก่งกาจ','รุ่งเรือง','เจริญ','วิริยะ','อุตสาหะ','สู้งาน','ดีเด่น','ขยัน','ตั้งใจ','พากเพียร'];
+            const out = [];
+            let no = 1;
+            rooms.forEach((room, ri) => {
+                const n = [8,7,6,4][ri];
+                for (let i=0;i<n;i++){
+                    const base = 40 + Math.floor(Math.random()*55);
+                    const g = k => Math.random()<0.12 ? 0 : Math.max(0, Math.min(k, Math.round(base/100*k + (Math.random()*4-2))));
+                    const s1=g(10),s2=g(10),s3=g(10),s4=g(10),s5=g(10),s6=g(10),s7=g(10),s8=g(10),s9=g(20);
+                    out.push({
+                        no:no, studentId:String(40000+no), name:'นาย'+first[(no-1)%first.length]+' '+last[(no-1)%last.length],
+                        room:room, score1:s1,score2:s2,score3:s3,score4:s4,score5:s5,score6:s6,score7:s7,score8:s8,score9:s9,
+                        totalScore:s1+s2+s3+s4+s5+s6+s7+s8+s9
+                    });
+                    no++;
+                }
+            });
+            return out;
+        }
+
+        /* ==================== ค้นหาผู้เรียน ==================== */
+        document.getElementById('studentId').addEventListener('keypress', e => { if (e.key === 'Enter') searchStudent(); });
+
+        async function searchStudent(){
+            const id = document.getElementById('studentId').value.trim();
+            if (!id) return toast('กรุณากรอกเลขประจำตัวผู้เรียน', 'error');
+            showLoading('search');
+            try{
+                if (allStudentsData.length === 0) await fetchAllStudents();
+                const student = allStudentsData.find(s => s.studentId === id);
+                if (student) displayStudentResult(student);
+                else {
+                    toast('ไม่พบผู้เรียนเลขประจำตัว ' + id, 'error');
+                    const sr = document.getElementById('studentResult');
+                    sr.dataset.hasResult = ''; sr.classList.add('hidden');
+                }
+            }catch(err){
+                console.error(err);
+                toast('เกิดข้อผิดพลาดในการค้นหา', 'error');
+            }
+            hideLoading('search');
+        }
+
+        function displayStudentResult(student){
+            const g = getGrade(student.totalScore);
+
+            // การ์ดสรุป (มุมมองหลักบนมือถือ)
+            document.getElementById('studentSummaryCard').innerHTML = `
+                <div class="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+                    <div class="bg-gradient-to-r from-sky-500 to-cyan-600 text-white p-4 flex items-center justify-between gap-3">
+                        <div class="min-w-0">
+                            <div class="font-bold text-base sm:text-lg truncate">${student.name}</div>
+                            <div class="text-xs sm:text-sm opacity-90">เลขที่ ${student.no} • เลขประจำตัว ${student.studentId} • ${student.room}</div>
+                        </div>
+                        <div class="text-right shrink-0">
+                            <div class="text-2xl sm:text-3xl font-bold leading-none">${student.totalScore}</div>
+                            <div class="text-xs opacity-90">/ 100</div>
+                        </div>
+                    </div>
+                    <div class="p-3 flex items-center justify-center gap-2 bg-slate-50 text-sm font-semibold ${g.color}">
+                        <i class="fas fa-award"></i> เกรด ${g.grade} — ${g.description} (GPA ${g.gpa})
+                    </div>
+                </div>`;
+
+            document.getElementById('studentTableBody').innerHTML = `
+                <tr class="hover:bg-sky-50 transition-colors">
+                    <td class="px-3 py-4 text-center font-medium">${student.no}</td>
+                    <td class="px-3 py-4 text-center font-medium text-sky-600">${student.studentId}</td>
+                    <td class="px-3 py-4 text-left font-medium">${student.name}</td>
+                    <td class="px-3 py-4 text-center">${student.room}</td>
+                    ${ASSIGNMENTS.map(a => {
+                        const v = student[a.key] || 0;
+                        return `<td class="px-3 py-4 text-center ${v<=0?'text-red-500 font-bold':''}">${v<=0?'0 ⚠️':v}</td>`;
+                    }).join('')}
+                    <td class="px-3 py-4 text-center">
+                        <div class="font-bold text-lg ${g.color}">${student.totalScore}</div>
+                        <div class="text-sm ${g.color}">${g.grade} (${g.description})</div>
+                    </td>
+                </tr>`;
+
+            // แผงย่อยรายชิ้นงาน + แถบความก้าวหน้า + ป้าย "ขาดส่ง"
+            const missing = ASSIGNMENTS.filter(a => (student[a.key]||0) <= 0);
+            document.getElementById('studentBreakdown').innerHTML = `
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    ${ASSIGNMENTS.map(a => {
+                        const v = student[a.key] || 0;
+                        const pct = Math.round(v / a.max * 100);
+                        const miss = v <= 0;
+                        return `
+                        <div class="rounded-xl border-2 ${miss?'border-rose-200 bg-rose-50':'border-slate-200 bg-white'} p-3">
+                            <div class="flex justify-between items-center mb-1.5">
+                                <span class="text-sm font-medium text-slate-700">${a.name}</span>
+                                <span class="text-xs font-bold ${miss?'text-rose-600':'text-emerald-600'}">${v}/${a.max}</span>
+                            </div>
+                            <div class="h-2 rounded-full bg-slate-100 overflow-hidden">
+                                <div class="h-full rounded-full ${miss?'bg-rose-400':'bg-gradient-to-r from-sky-500 to-cyan-500'}" style="width:${miss?4:pct}%"></div>
+                            </div>
+                            ${miss?'<div class="text-[11px] text-rose-500 mt-1 font-medium">⚠️ ขาดส่ง / ยังไม่มีคะแนน</div>':''}
+                        </div>`;
+                    }).join('')}
+                </div>
+                ${missing.length ? `<div class="mt-4 p-4 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-800">
+                    <i class="fas fa-triangle-exclamation mr-2"></i>ผู้เรียนคนนี้มีงานค้าง <b>${missing.length}</b> ชิ้น: ${missing.map(m=>m.name).join(', ')}
+                    <span class="block text-xs text-amber-600 mt-1">ครูสามารถส่งแจ้งเตือนได้ที่หัวข้อ "แจ้งเตือน (ครู)"</span>
+                </div>` : `<div class="mt-4 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-800">
+                    <i class="fas fa-circle-check mr-2"></i>ส่งงานครบทุกชิ้น 🎉</div>`}`;
+
+            const sr = document.getElementById('studentResult');
+            sr.dataset.hasResult = '1';
+            sr.classList.remove('hidden');
+            sr.scrollIntoView({ behavior:'smooth' });
+        }
+
+        /* ==================== แดชบอร์ด ==================== */
+        let currentRoom = null;
+
+        async function loadDashboard(){
+            try{
+                if (allStudentsData.length === 0) await fetchAllStudents();
+                const overall = calculateOverallStats(allStudentsData);
+                displayOverallStats(overall);
+                displayGradeDistribution(overall);
+                renderRoomTabs();
+            }catch(err){ console.error('dashboard', err); }
+        }
+
+        function getRoomList(){
+            return [...new Set(allStudentsData.map(s => s.room).filter(Boolean))]
+                .sort((a, b) => a.localeCompare(b, 'th', { numeric:true }));
+        }
+
+        function renderRoomTabs(){
+            const rooms = getRoomList();
+            const tabs = document.getElementById('roomTabs');
+            const view = document.getElementById('roomStatsView');
+            if (!rooms.length){
+                tabs.innerHTML = '';
+                view.innerHTML = '<div class="text-center text-slate-500 py-6">ยังไม่มีข้อมูลห้องเรียน</div>';
+                return;
+            }
+            if (!rooms.includes(currentRoom)) currentRoom = rooms[0];
+            tabs.innerHTML = rooms.map(r => `
+                <button type="button" data-room="${r}" onclick="selectRoom('${r}')"
+                        class="room-tab shrink-0 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition">🏫 ${r}</button>`).join('');
+            selectRoom(currentRoom);
+        }
+
+        function selectRoom(roomName){
+            currentRoom = roomName;
+            document.querySelectorAll('#roomTabs .room-tab').forEach(b =>
+                b.classList.toggle('room-tab-active', b.dataset.room === roomName));
+            const list = allStudentsData.filter(s => s.room === roomName);
+            displayRoomStats(calculateRoomStats(list), roomName);
+        }
+
+        function calculateOverallStats(students){
+            const st = { total:students.length, A:0,Bplus:0,B:0,Cplus:0,C:0,Dplus:0,D:0,F:0, totalScore:0, passCount:0, excellentCount:0 };
+            if (!students.length) return st;
+            students.forEach(s => {
+                const sc = s.totalScore; st.totalScore += sc;
+                if (sc >= 50) st.passCount++;
+                if (sc >= 80){ st.excellentCount++; st.A++; }
+                else if (sc >= 75) st.Bplus++;
+                else if (sc >= 70) st.B++;
+                else if (sc >= 65) st.Cplus++;
+                else if (sc >= 60) st.C++;
+                else if (sc >= 55) st.Dplus++;
+                else if (sc >= 50) st.D++;
+                else st.F++;
+            });
+            st.average = (st.totalScore / students.length).toFixed(1);
+            st.passRate = ((st.passCount / students.length) * 100).toFixed(1);
+            st.excellentRate = ((st.excellentCount / students.length) * 100).toFixed(1);
+            return st;
+        }
+
+        function displayOverallStats(st){
+            document.getElementById('totalStudents').textContent = st.total;
+            document.getElementById('overallAverage').textContent = st.average || 0;
+            document.getElementById('passRate').textContent = (st.passRate || 0) + '%';
+            document.getElementById('excellentRate').textContent = (st.excellentRate || 0) + '%';
+        }
+
+        function displayGradeDistribution(st){
+            const grades = [
+                { name:'A',  count:st.A,     grad:'from-emerald-400 to-green-500',  text:'text-emerald-700' },
+                { name:'B+', count:st.Bplus, grad:'from-sky-400 to-cyan-500',       text:'text-sky-700' },
+                { name:'B',  count:st.B,     grad:'from-cyan-400 to-teal-500',      text:'text-teal-700' },
+                { name:'C+', count:st.Cplus, grad:'from-amber-400 to-yellow-500',   text:'text-amber-700' },
+                { name:'C',  count:st.C,     grad:'from-orange-400 to-amber-500',   text:'text-orange-700' },
+                { name:'D+', count:st.Dplus, grad:'from-rose-400 to-red-500',       text:'text-rose-700' },
+                { name:'D',  count:st.D,     grad:'from-red-500 to-rose-600',       text:'text-red-700' },
+                { name:'F',  count:st.F,     grad:'from-slate-400 to-slate-600',    text:'text-slate-700' }
+            ];
+            const total = grades.reduce((s, g) => s + g.count, 0);
+            const max = Math.max(...grades.map(g => g.count), 1);
+
+            const badge = document.getElementById('gradeTotalBadge');
+            if (badge) badge.textContent = 'รวม ' + total + ' คน';
+
+            document.getElementById('gradeDistribution').innerHTML = grades.map((g, i) => {
+                const w = g.count ? Math.max((g.count / max) * 100, 8) : 0;
+                const share = total > 0 ? Math.round((g.count / total) * 100) : 0;
+                return `
+                    <div class="flex items-center gap-2 sm:gap-3">
+                        <span class="w-9 sm:w-11 shrink-0 inline-flex items-center justify-center py-1 rounded-lg text-white text-xs font-bold bg-gradient-to-r ${g.grad}">${g.name}</span>
+                        <div class="flex-1 h-7 sm:h-8 rounded-lg bg-slate-100 overflow-hidden">
+                            <div class="h-full rounded-lg bg-gradient-to-r ${g.grad} shadow-sm transition-all duration-700 ease-out"
+                                 style="width:0%" data-w="${w}"></div>
+                        </div>
+                        <div class="w-16 sm:w-24 shrink-0 text-right leading-tight">
+                            <span class="text-sm font-bold text-slate-800">${g.count}</span><span class="text-[11px] sm:text-xs text-slate-400"> คน</span>
+                            <span class="hidden sm:inline text-xs text-slate-400"> · ${share}%</span>
+                        </div>
+                    </div>`;
+            }).join('');
+
+            // เล่นอนิเมชันความยาวแท่งหลังใส่ DOM
+            requestAnimationFrame(() => {
+                document.querySelectorAll('#gradeDistribution [data-w]').forEach(el => { el.style.width = el.dataset.w + '%'; });
+            });
+        }
+
+        function calculateRoomStats(students){
+            const st = { total:students.length, A:0,Bplus:0,B:0,Cplus:0,C:0,Dplus:0,D:0,F:0, average:'0.0' };
+            if (!students.length) return st;
+            let total = 0;
+            students.forEach(s => {
+                const sc = +s.totalScore || 0; total += sc;
+                if (sc >= 80) st.A++;
+                else if (sc >= 75) st.Bplus++;
+                else if (sc >= 70) st.B++;
+                else if (sc >= 65) st.Cplus++;
+                else if (sc >= 60) st.C++;
+                else if (sc >= 55) st.Dplus++;
+                else if (sc >= 50) st.D++;
+                else st.F++;
+            });
+            st.average = (total / students.length).toFixed(1);
+            return st;
+        }
+
+        function displayRoomStats(st, roomName){
+            const rows = [
+                { grade:'A', gpa:'4.0', desc:'ดีเยี่ยม', count:st.A, tc:'text-green-600' },
+                { grade:'B+', gpa:'3.5', desc:'ดีมาก', count:st.Bplus, tc:'text-sky-600' },
+                { grade:'B', gpa:'3.0', desc:'ดี', count:st.B, tc:'text-yellow-600' },
+                { grade:'C+', gpa:'2.5', desc:'ค่อนข้างดี', count:st.Cplus, tc:'text-orange-600' },
+                { grade:'C', gpa:'2.0', desc:'น่าพอใจ', count:st.C, tc:'text-red-500' },
+                { grade:'D+', gpa:'1.5', desc:'พอใช้', count:st.Dplus, tc:'text-red-600' },
+                { grade:'D', gpa:'1.0', desc:'ผ่านขั้นต่ำ', count:st.D, tc:'text-red-700' },
+                { grade:'F', gpa:'0.0', desc:'ต่ำกว่าเกณฑ์', count:st.F, tc:'text-gray-600' }
+            ];
+            const passCount = st.total - st.F;
+            const passRate = st.total > 0 ? ((passCount / st.total) * 100).toFixed(1) : '0.0';
+            document.getElementById('roomStatsView').innerHTML = `
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                    <div class="text-center p-4 bg-gradient-to-br from-sky-50 to-cyan-50 rounded-xl">
+                        <div class="text-sm font-bold text-sky-600 mb-1">🏫 ${roomName}</div>
+                        <div class="text-3xl font-bold text-slate-800">${st.total}</div>
+                        <div class="text-xs text-slate-500">ผู้เรียนทั้งหมด</div>
+                    </div>
+                    <div class="text-center p-4 bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl">
+                        <div class="text-3xl font-bold text-emerald-600">${st.average}</div>
+                        <div class="text-xs text-slate-500 mt-1">คะแนนเฉลี่ย ⭐</div>
+                    </div>
+                    <div class="text-center p-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl">
+                        <div class="text-3xl font-bold text-amber-600">${passRate}%</div>
+                        <div class="text-xs text-slate-500 mt-1">อัตราผ่าน (${passCount}/${st.total})</div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    ${rows.map(r => {
+                        const pct = st.total > 0 ? ((r.count / st.total) * 100).toFixed(1) : '0.0';
+                        return `
+                            <div class="bg-slate-50 p-3 rounded-lg">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="font-bold ${r.tc}">${r.grade}</span>
+                                    <span class="font-bold text-slate-800">${r.count} คน</span>
+                                </div>
+                                <div class="flex justify-between items-center text-slate-500">
+                                    <span>${r.gpa} ${r.desc}</span>
+                                    <span class="font-medium ${r.tc}">${pct}%</span>
+                                </div>
+                            </div>`;
+                    }).join('')}
+                </div>`;
+        }
+
+        /* ==================== Top 10 ==================== */
+        let top10Room = 'all';
+
+        async function loadTop10(){
+            try{
+                if (allStudentsData.length === 0) await fetchAllStudents();
+                top10Room = 'all';
+                renderTop10Rooms();
+                renderTop10();
+            }catch(err){ console.error('top10', err); }
+        }
+
+        function renderTop10Rooms(){
+            const rooms = getRoomList();
+            const wrap = document.getElementById('top10Rooms');
+            if (!wrap) return;
+            const items = ['all', ...rooms];
+            wrap.innerHTML = items.map(r => `
+                <button type="button" data-room="${r}" onclick="selectTop10Room('${r}')"
+                        class="room-tab shrink-0 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition ${r === top10Room ? 'room-tab-active' : ''}">
+                    ${r === 'all' ? '🏆 ทั้งหมด' : '🏫 ' + r}
+                </button>`).join('');
+        }
+
+        function selectTop10Room(r){
+            top10Room = r;
+            document.querySelectorAll('#top10Rooms .room-tab').forEach(b =>
+                b.classList.toggle('room-tab-active', b.dataset.room === r));
+            renderTop10();
+        }
+
+        // อักษรย่อจากชื่อ (ตัดคำนำหน้าออก)
+        function nameInitial(name){
+            const clean = String(name || '').replace(/^(นาย|นางสาว|นาง|เด็กชาย|เด็กหญิง|ด\.ช\.|ด\.ญ\.|น\.ส\.)\s*/,'').trim();
+            return (clean[0] || name[0] || '?');
+        }
+
+        function renderTop10(){
+            const pool = top10Room === 'all' ? allStudentsData : allStudentsData.filter(s => s.room === top10Room);
+            const students = [...pool].sort((a, b) => b.totalScore - a.totalScore).slice(0, 10);
+            const container = document.getElementById('top10List');
+            const podium = document.getElementById('podium');
+
+            if (!students.length){
+                podium.classList.add('hidden');
+                container.innerHTML = '<div class="text-center text-slate-500 py-10"><i class="fas fa-inbox text-2xl mb-2 block"></i>ยังไม่มีข้อมูลผู้เรียนในกลุ่มนี้</div>';
+                return;
+            }
+
+            /* ---------- โพเดียม 3 อันดับแรก ---------- */
+            const podClass = [
+                { order:'order-2', h:'h-28 sm:h-32', ring:'from-amber-300 to-yellow-500',  chip:'bg-amber-100 text-amber-700',  step:'from-amber-400 to-yellow-600', medal:'🥇', scale:'sm:scale-110', z:'z-10' },
+                { order:'order-1', h:'h-20 sm:h-24', ring:'from-slate-300 to-slate-400',   chip:'bg-slate-100 text-slate-600',  step:'from-slate-400 to-slate-500',  medal:'🥈', scale:'', z:'' },
+                { order:'order-3', h:'h-16 sm:h-20', ring:'from-orange-300 to-orange-500', chip:'bg-orange-100 text-orange-700', step:'from-orange-400 to-orange-600', medal:'🥉', scale:'', z:'' }
+            ];
+            if (students.length >= 3){
+                podium.classList.remove('hidden');
+                podium.innerHTML = `
+                    <div class="flex items-end justify-center gap-2 sm:gap-4">
+                        ${[0,1,2].map(i => {
+                            const s = students[i], g = getGrade(s.totalScore), p = podClass[i];
+                            return `
+                            <div class="${p.order} ${p.scale} ${p.z} flex-1 max-w-[10.5rem] flex flex-col items-center transition-transform">
+                                <div class="relative mb-2">
+                                    <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br ${p.ring} p-[3px] shadow-lg">
+                                        <div class="w-full h-full rounded-full bg-white flex items-center justify-center text-lg sm:text-xl font-bold text-slate-700">${nameInitial(s.name)}</div>
+                                    </div>
+                                    <div class="absolute -bottom-1 -right-1 text-xl sm:text-2xl drop-shadow">${p.medal}</div>
+                                </div>
+                                <div class="w-full min-h-[7.25rem] flex flex-col justify-center bg-white rounded-2xl shadow-md border border-slate-100 px-2 py-3 text-center">
+                                    <div class="font-bold text-slate-800 text-xs sm:text-sm leading-tight line-clamp-2">${s.name}</div>
+                                    <div class="text-[10px] sm:text-xs text-slate-400 truncate">${s.room}</div>
+                                    <div class="mt-1.5 text-xl sm:text-2xl font-extrabold ${g.color} leading-none">${s.totalScore}</div>
+                                    <span class="inline-block mt-1 mx-auto text-[10px] font-bold px-2 py-0.5 rounded-full ${p.chip}">${g.grade}</span>
+                                </div>
+                                <div class="w-full ${p.h} mt-2 rounded-t-xl bg-gradient-to-b ${p.step} shadow-inner flex items-start justify-center pt-2 text-white font-extrabold text-lg sm:text-xl">${i === 0 ? 1 : i === 1 ? 2 : 3}</div>
+                            </div>`;
+                        }).join('')}
+                    </div>`;
+            } else {
+                podium.classList.add('hidden');
+            }
+
+            /* ---------- รายชื่อทั้งหมด ---------- */
+            const medals = ['🥇','🥈','🥉'];
+            container.innerHTML = students.map((s, idx) => {
+                const g = getGrade(s.totalScore), rank = idx + 1;
+                const pctBar = Math.max(0, Math.min(100, s.totalScore));
+                let ring, edge, tint;
+                if (rank === 1){ ring='from-amber-400 to-yellow-600'; edge='border-l-amber-400'; tint='from-amber-50/70'; }
+                else if (rank === 2){ ring='from-slate-300 to-slate-500'; edge='border-l-slate-400'; tint='from-slate-50/70'; }
+                else if (rank === 3){ ring='from-orange-400 to-orange-600'; edge='border-l-orange-400'; tint='from-orange-50/70'; }
+                else { ring='from-sky-400 to-cyan-600'; edge='border-l-sky-300'; tint='from-white'; }
+                return `
+                    <div class="group flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl border border-slate-100 border-l-4 ${edge} bg-gradient-to-r ${tint} to-white hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
+                        <div class="shrink-0 w-9 text-center">
+                            <span class="text-lg">${rank <= 3 ? medals[rank - 1] : ''}</span>
+                            <span class="${rank <= 3 ? 'hidden' : 'block'} text-sm font-bold text-slate-400">#${rank}</span>
+                        </div>
+                        <div class="shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br ${ring} p-[2px]">
+                            <div class="w-full h-full rounded-full bg-white flex items-center justify-center font-bold text-slate-700">${nameInitial(s.name)}</div>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <h4 class="text-sm sm:text-base font-bold text-slate-800 truncate">${s.name}</h4>
+                            <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] sm:text-xs text-slate-400">
+                                <span><i class="fas fa-id-card mr-1"></i>${s.studentId}</span>
+                                <span><i class="fas fa-door-open mr-1"></i>${s.room}</span>
+                            </div>
+                            <div class="mt-1.5 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                                <div class="h-full rounded-full bg-gradient-to-r ${ring} transition-all duration-700" style="width:${pctBar}%"></div>
+                            </div>
+                        </div>
+                        <div class="shrink-0 text-right">
+                            <div class="text-lg sm:text-2xl font-extrabold ${g.color} leading-none">${s.totalScore}</div>
+                            <div class="text-[10px] sm:text-xs ${g.color} font-semibold">${g.grade} · ${g.description}</div>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        /* ==================== ล็อกอินสำหรับครู (ใช้ร่วมกัน: ตั้งค่าระบบ + คะแนนเก็บ) ==================== */
+        const ADMIN_KEY = 'adminUnlocked';
+        let adminSession = false;   // ปลดล็อกในรอบการใช้งานนี้ (แม้ไม่ได้ติ๊ก "จดจำ")
+
+        function isAdminUnlocked(){
+            if (adminSession) return true;
+            try { return localStorage.getItem(ADMIN_KEY) === '1'; } catch (e) { return false; }
+        }
+
+        function togglePass(inputId, eyeId){
+            const inp = document.getElementById(inputId || 'teacherPass');
+            const eye = document.getElementById(eyeId || 'passEye');
+            if (!inp || !eye) return;
+            const show = inp.type === 'password';
+            inp.type = show ? 'text' : 'password';
+            eye.className = show ? 'fas fa-eye-slash' : 'fas fa-eye';
+        }
+
+        function tryUnlock(pass, remember, errElId){
+            const e = document.getElementById(errElId);
+            if (pass !== TEACHER_PASSCODE){
+                if (e){ e.textContent = 'รหัสผ่านไม่ถูกต้อง'; e.classList.remove('hidden'); }
+                return false;
+            }
+            if (e) e.classList.add('hidden');
+            adminSession = true;
+            if (remember){ try { localStorage.setItem(ADMIN_KEY, '1'); } catch (err) {} }
+            return true;
+        }
+
+        // แสดง/ซ่อนแผงของหน้า notify หรือ scores ตามสถานะปลดล็อก
+        function showLockedView(view){
+            const unlocked = isAdminUnlocked();
+            const login = document.getElementById(view + 'Login');
+            const panel = document.getElementById(view + 'Panel');
+            if (login) login.classList.toggle('hidden', unlocked);
+            if (panel) panel.classList.toggle('hidden', !unlocked);
+            if (!unlocked) return;
+            if (view === 'notify'){
+                fillSettingsForm();
+                (async () => {
+                    if (!allStudentsData.length){ toast('กำลังโหลดรายชื่อผู้เรียน...', 'info'); await fetchAllStudents(); }
+                    populateNotifyRooms();
+                })();
+            } else if (view === 'scores'){
+                initScoresPanel();
+            }
+        }
+
+        function teacherLogin(){
+            const pass = document.getElementById('teacherPass').value.trim();
+            const remember = document.getElementById('rememberAdmin')?.checked;
+            if (!tryUnlock(pass, remember, 'loginError')) return;
+            showLockedView('notify');
+        }
+
+        function scoresLogin(){
+            const pass = document.getElementById('scoresPass').value.trim();
+            const remember = document.getElementById('rememberScores')?.checked;
+            if (!tryUnlock(pass, remember, 'scoresLoginError')) return;
+            showLockedView('scores');
+        }
+
+        function adminLogout(){
+            adminSession = false;
+            try { localStorage.removeItem(ADMIN_KEY); } catch (e) {}
+            ['notify', 'scores'].forEach(v => {
+                document.getElementById(v + 'Panel')?.classList.add('hidden');
+                document.getElementById(v + 'Login')?.classList.remove('hidden');
+            });
+            ['teacherPass', 'scoresPass'].forEach(id => { const i = document.getElementById(id); if (i){ i.value = ''; i.type = 'password'; } });
+            ['passEye', 'scoresEye'].forEach(id => { const e = document.getElementById(id); if (e) e.className = 'fas fa-eye'; });
+            ['rememberAdmin', 'rememberScores'].forEach(id => { const c = document.getElementById(id); if (c) c.checked = false; });
+            toast('ออกจากระบบแล้ว', 'info');
+        }
+
+        /* ==================== คะแนนเก็บ: กรอก/แก้ไขคะแนน + หัวข้อ + เพิ่มผู้เรียน ==================== */
+        let scoreRoom = null;
+        let scoreEdits = {};     // studentId -> [ค่า 9 ช่อง]
+        let scoreDirty = false;
+
+        async function postAdmin(action, payload){
+            if (API_URL.includes('YOUR_SCRIPT_ID')){ toast('ยังไม่ได้ตั้งค่า API_URL', 'error'); return null; }
+            try {
+                payload.passcode = TEACHER_PASSCODE;
+                const res = await fetch(API_URL, { method: 'POST', body: new URLSearchParams({ action, payload: JSON.stringify(payload) }) });
+                const data = await res.json();
+                if (!data.success) toast('ไม่สำเร็จ: ' + (data.error || 'ไม่ทราบสาเหตุ'), 'error');
+                return data;
+            } catch (err) {
+                toast('เชื่อมต่อไม่ได้: ' + err.message, 'error');
+                return null;
+            }
+        }
+
+        async function reloadAllData(){
+            allStudentsData = [];
+            await fetchAllStudents();
+            dashboardLoaded = false;
+            top10Loaded = false;
+        }
+
+        let headerDraft = [];   // ร่างหัวข้อที่กำลังแก้ (เพิ่ม/ลบช่องได้ก่อนบันทึก)
+
+        async function initScoresPanel(){
+            if (!allStudentsData.length){ toast('กำลังโหลดข้อมูล...', 'info'); await fetchAllStudents(); }
+            headerDraft = [];
+            renderHeaderEditor();
+            renderScoreRoomTabs();
+        }
+
+        function syncHeaderDraft(){
+            const names = [...document.querySelectorAll('#headerEditor .hdr-name')];
+            const maxes = [...document.querySelectorAll('#headerEditor .hdr-max')];
+            headerDraft = names.map((el, i) => ({ name: el.value, max: parseFloat(maxes[i].value) || 10 }));
+        }
+
+        function renderHeaderEditor(){
+            const wrap = document.getElementById('headerEditor');
+            if (!wrap) return;
+            if (!headerDraft.length) headerDraft = ASSIGNMENTS.map(a => ({ name: a.name, max: a.max }));
+            wrap.innerHTML = headerDraft.map((h, i) => `
+                <div class="bg-slate-50 rounded-xl p-3">
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="label mb-0">ช่องที่ ${i + 1}</label>
+                        <button type="button" onclick="removeHeaderField(${i})" title="ลบช่องนี้" class="text-slate-300 hover:text-red-500 text-sm"><i class="fas fa-trash-can"></i></button>
+                    </div>
+                    <input type="text" class="input-field mb-2 hdr-name" value="${escHtml(h.name)}" placeholder="ชื่อหัวข้อ">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-slate-500">คะแนนเต็ม</span>
+                        <input type="number" min="1" class="input-field hdr-max" value="${h.max}" style="max-width:6rem">
+                    </div>
+                </div>`).join('') + `
+                <button type="button" onclick="addHeaderField()" class="border-2 border-dashed border-sky-300 text-sky-600 rounded-xl p-3 flex flex-col items-center justify-center gap-1 hover:bg-sky-50 transition min-h-[7rem]">
+                    <i class="fas fa-plus text-lg"></i><span class="text-sm font-medium">เพิ่มช่องคะแนน</span>
+                </button>`;
+        }
+
+        function addHeaderField(){
+            syncHeaderDraft();
+            headerDraft.push({ name: '', max: 10 });
+            renderHeaderEditor();
+        }
+
+        function removeHeaderField(i){
+            syncHeaderDraft();
+            if (headerDraft.length <= 1) return toast('ต้องมีอย่างน้อย 1 ช่อง', 'error');
+            headerDraft.splice(i, 1);
+            renderHeaderEditor();
+        }
+
+        async function saveHeaders(){
+            syncHeaderDraft();
+            const headers = headerDraft.map((h, i) => ({
+                name: (h.name || '').trim() || ('หัวข้อ ' + (i + 1)),
+                max: Math.max(1, parseFloat(h.max) || 10)
+            }));
+            if (headers.length !== ASSIGNMENTS.length){
+                let ok = true;
+                try {
+                    ok = window.confirm('จำนวนช่องคะแนนจะเปลี่ยนจาก ' + ASSIGNMENTS.length + ' เป็น ' + headers.length + ' ช่อง\n' +
+                        (headers.length < ASSIGNMENTS.length ? '⚠️ การลดช่องจะลบคะแนนช่องท้ายของผู้เรียนทุกคน\n' : '') +
+                        'ยืนยันหรือไม่?');
+                } catch (e) { ok = true; }
+                if (!ok) return;
+            }
+            const res = await postAdmin('saveHeaders', { headers });
+            if (res && res.success){
+                toast(res.message || 'บันทึกหัวข้อคะแนนแล้ว', 'success');
+                headerDraft = [];
+                scoreEdits = {};
+                markScoreDirty(false);
+                await reloadAllData();
+                renderHeaderEditor();
+                renderScoreRoomTabs();
+            }
+        }
+
+        function renderScoreRoomTabs(){
+            const rooms = getRoomList();
+            const wrap = document.getElementById('scoreRoomTabs');
+            const table = document.getElementById('scoreTableWrap');
+            if (!rooms.length){
+                wrap.innerHTML = '';
+                table.innerHTML = '<p class="text-center text-slate-500 py-6">ยังไม่มีข้อมูลผู้เรียน</p>';
+                return;
+            }
+            if (!rooms.includes(scoreRoom)) scoreRoom = rooms[0];
+            wrap.innerHTML = rooms.map(r => `
+                <button type="button" data-room="${r}" onclick="selectScoreRoom('${r}')"
+                        class="room-tab shrink-0 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition ${r === scoreRoom ? 'room-tab-active' : ''}">🏫 ${r}</button>`).join('');
+            renderScoreTable();
+        }
+
+        function selectScoreRoom(r){
+            if (scoreDirty){
+                let ok = true;
+                try { ok = window.confirm('มีการแก้ไขคะแนนที่ยังไม่บันทึก ต้องการเปลี่ยนห้อง (ทิ้งการแก้ไข) หรือไม่?'); } catch (e) { ok = true; }
+                if (!ok) return;
+            }
+            scoreRoom = r;
+            scoreEdits = {};
+            markScoreDirty(false);
+            document.querySelectorAll('#scoreRoomTabs .room-tab').forEach(b => b.classList.toggle('room-tab-active', b.dataset.room === r));
+            renderScoreTable();
+        }
+
+        function renderScoreTable(){
+            const wrap = document.getElementById('scoreTableWrap');
+            const list = allStudentsData.filter(s => s.room === scoreRoom).sort((a, b) => a.no - b.no);
+            if (!list.length){
+                wrap.innerHTML = '<p class="text-center text-slate-500 py-6">ห้องนี้ยังไม่มีผู้เรียน — เพิ่มได้ที่ด้านล่าง</p>';
+                return;
+            }
+            const minW = 340 + ASSIGNMENTS.length * 72;
+            wrap.innerHTML = `
+                <table class="text-sm border-collapse" style="min-width:${minW}px">
+                    <thead>
+                        <tr class="bg-gradient-to-r from-sky-500 to-cyan-600 text-white">
+                            <th class="px-2 py-2">เลขที่</th>
+                            <th class="px-3 py-2 text-left">ชื่อ-นามสกุล</th>
+                            ${ASSIGNMENTS.map(a => `<th class="px-1 py-2 text-center whitespace-nowrap text-xs">${escHtml(a.name)}<br><span class="opacity-80 font-normal">เต็ม ${a.max}</span></th>`).join('')}
+                            <th class="px-2 py-2">รวม</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${list.map(s => {
+                            const cur = scoreEdits[s.studentId] || ASSIGNMENTS.map(a => s[a.key] || 0);
+                            const total = cur.reduce((x, y) => x + (parseFloat(y) || 0), 0);
+                            return `<tr class="odd:bg-white even:bg-slate-50">
+                                <td class="px-2 py-1 text-center text-slate-500">${s.no}</td>
+                                <td class="px-3 py-1 text-left whitespace-nowrap font-medium text-slate-700">${escHtml(s.name)}</td>
+                                ${ASSIGNMENTS.map((a, i) => `<td class="px-1 py-1 text-center"><input type="number" min="0" max="${a.max}" value="${cur[i]}" data-id="${s.studentId}" data-i="${i}" oninput="onScoreInput(this)" class="w-14 text-center border border-slate-200 rounded-lg py-1 focus:border-sky-500 focus:outline-none"></td>`).join('')}
+                                <td class="px-2 py-1 text-center font-bold text-sky-600" data-total="${s.studentId}">${total}</td>
+                            </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>`;
+        }
+
+        function onScoreInput(el){
+            const id = el.dataset.id, i = parseInt(el.dataset.i);
+            const row = allStudentsData.find(s => s.studentId === id);
+            if (!row) return;
+            if (!scoreEdits[id]) scoreEdits[id] = ASSIGNMENTS.map(a => row[a.key] || 0);
+            let v = parseFloat(el.value);
+            if (isNaN(v) || v < 0) v = 0;
+            scoreEdits[id][i] = v;
+            const total = scoreEdits[id].reduce((x, y) => x + (parseFloat(y) || 0), 0);
+            const tc = document.querySelector('[data-total="' + id + '"]');
+            if (tc) tc.textContent = total;
+            markScoreDirty(true);
+        }
+
+        function markScoreDirty(v){
+            scoreDirty = v;
+            document.getElementById('scoreDirty').classList.toggle('hidden', !v);
+        }
+
+        async function saveScores(){
+            const rows = Object.keys(scoreEdits).map(id => ({ studentId: id, scores: scoreEdits[id] }));
+            if (!rows.length) return toast('ยังไม่มีการแก้ไขคะแนน', 'info');
+            const btn = document.getElementById('saveScoresBtn');
+            btn.disabled = true;
+            toast('กำลังบันทึกคะแนน...', 'info');
+            const res = await postAdmin('saveScores', { rows });
+            btn.disabled = false;
+            if (res && res.success){
+                toast('บันทึกคะแนน ' + res.saved + ' คนเรียบร้อย ✅', 'success');
+                scoreEdits = {};
+                markScoreDirty(false);
+                await reloadAllData();
+                renderScoreTable();
+            }
+        }
+
+        async function addStudent(){
+            const student = {
+                no: document.getElementById('addNo').value.trim(),
+                studentId: document.getElementById('addId').value.trim(),
+                name: document.getElementById('addName').value.trim(),
+                room: document.getElementById('addRoom').value.trim()
+            };
+            if (!student.studentId || !student.name) return toast('กรอกเลขประจำตัวและชื่อ', 'error');
+            const res = await postAdmin('addStudent', { student });
+            if (res && res.success){
+                toast(res.message || 'เพิ่มผู้เรียนแล้ว', 'success');
+                ['addNo', 'addId', 'addName', 'addRoom'].forEach(id => document.getElementById(id).value = '');
+                await reloadAllData();
+                if (student.room) scoreRoom = student.room;
+                renderScoreRoomTabs();
+            }
+        }
+
+        function populateNotifyRooms(){
+            const rooms = [...new Set(allStudentsData.map(s => s.room).filter(Boolean))].sort();
+            document.getElementById('notifyRoom').innerHTML =
+                '<option value="">— เลือกห้อง —</option>' + rooms.map(r => `<option value="${r}">${r}</option>`).join('');
+        }
+
+        function onNotifyRoomChange(){
+            const room = document.getElementById('notifyRoom').value;
+            const list = allStudentsData.filter(s => s.room === room).sort((a, b) => a.no - b.no);
+            document.getElementById('notifyStudent').innerHTML =
+                '<option value="">— เลือกผู้เรียน —</option>' +
+                list.map(s => {
+                    const miss = ASSIGNMENTS.filter(a => (s[a.key]||0) <= 0).length;
+                    return `<option value="${s.studentId}">${s.no}. ${s.name}${miss ? ' — ค้าง ' + miss + ' ชิ้น' : ''}</option>`;
+                }).join('');
+            ['notifyChecklistWrap','notifyOptionsWrap','notifyPreviewWrap'].forEach(id => document.getElementById(id).classList.add('hidden'));
+        }
+
+        function onNotifyStudentChange(){
+            const s = getNotifyStudent();
+            const wraps = ['notifyChecklistWrap','notifyOptionsWrap','notifyPreviewWrap'];
+            if (!s){ wraps.forEach(id => document.getElementById(id).classList.add('hidden')); return; }
+            renderChecklist(s);
+            wraps.forEach(id => document.getElementById(id).classList.remove('hidden'));
+            updatePreview();
+        }
+
+        function getNotifyStudent(){
+            return allStudentsData.find(x => x.studentId === document.getElementById('notifyStudent').value);
+        }
+
+        function renderChecklist(s){
+            document.getElementById('notifyChecklist').innerHTML = ASSIGNMENTS.map(a => {
+                const v = s[a.key] || 0, miss = v <= 0;
+                return `
+                    <label class="flex items-center gap-3 p-3 rounded-xl border-2 ${miss ? 'border-rose-200 bg-rose-50' : 'border-slate-200 bg-white'} cursor-pointer hover:shadow-sm transition">
+                        <input type="checkbox" class="notify-chk w-4 h-4 accent-sky-600" data-key="${a.key}" data-name="${a.name}" data-val="${v}" data-max="${a.max}" ${miss ? 'checked' : ''} onchange="updatePreview()">
+                        <span class="flex-1">
+                            <span class="block text-sm font-medium text-slate-800">${a.name}</span>
+                            <span class="block text-xs ${miss ? 'text-rose-500' : 'text-emerald-600'}">${miss ? 'ขาดส่ง / ยังไม่มีคะแนน' : 'ได้ ' + v + '/' + a.max}</span>
+                        </span>
+                        <span class="text-[11px] font-bold ${miss ? 'text-rose-600 bg-rose-100' : 'text-emerald-600 bg-emerald-100'} px-2 py-1 rounded-full">${v}</span>
+                    </label>`;
+            }).join('');
+        }
+
+        function getSelectedItems(){
+            return [...document.querySelectorAll('.notify-chk:checked')].map(c => ({
+                key:c.dataset.key, name:c.dataset.name,
+                val:parseFloat(c.dataset.val) || 0, max:parseFloat(c.dataset.max) || 0
+            }));
+        }
+
+        function buildIndividualMessage(s, items){
+            const due = document.getElementById('notifyDue').value;
+            const note = document.getElementById('notifyNote').value.trim();
+            const level = document.getElementById('notifyLevel').value;
+            const L = [];
+            L.push('🔔 แจ้งเตือนงาน/คะแนนที่ค้างส่ง');
+            L.push('วิชา ' + settings.subject);
+            L.push('─────────────');
+            L.push('👤 ' + s.name);
+            L.push('🆔 เลขประจำตัว ' + s.studentId + '  •  🏫 ' + s.room);
+            L.push('');
+            L.push('📌 รายการที่ต้องดำเนินการ');
+            if (items.length) items.forEach(it => L.push('   • ' + it.name + '  (ได้ ' + it.val + '/' + it.max + ')'));
+            else L.push('   • (ยังไม่ได้เลือกรายการ)');
+            L.push('');
+            L.push('🚦 ระดับ: ' + level);
+            if (due) L.push('⏰ กำหนดส่ง: ' + formatThaiDate(due));
+            if (note) L.push('📝 ครูฝากถึงนักเรียน: ' + note);
+            L.push('─────────────');
+            L.push('คะแนนรวมปัจจุบัน ' + s.totalScore + '/100');
+            L.push('จาก ' + settings.teacher);
+            return L.join('\n');
+        }
+
+        function buildRoomSummary(room, rows){
+            const L = [];
+            L.push('🔔 สรุปงานค้างส่ง — ห้อง ' + room);
+            L.push('วิชา ' + settings.subject);
+            L.push('─────────────');
+            rows.forEach(r => {
+                L.push('👤 ' + r.name + ' (' + r.studentId + ')');
+                r.missing.forEach(m => L.push('   • ' + m + ' — ยังไม่มีคะแนน'));
+                L.push('   คะแนนรวม ' + r.totalScore + '/100');
+                L.push('');
+            });
+            L.push('รวม ' + rows.length + ' คนที่มีงานค้าง');
+            L.push('จาก ' + settings.teacher);
+            return L.join('\n');
+        }
+
+        function updatePreview(){
+            const s = getNotifyStudent();
+            if (!s) return;
+            document.getElementById('notifyPreview').textContent = buildIndividualMessage(s, getSelectedItems());
+        }
+
+        async function postNotify(payload){
+            if (API_URL.includes('YOUR_SCRIPT_ID')) return toast('ยังไม่ได้ตั้งค่า API_URL', 'error');
+            const btns = document.querySelectorAll('#notifyPanel button');
+            btns.forEach(b => b.disabled = true);
+            toast('กำลังส่งแจ้งเตือน...', 'info');
+            try{
+                payload.passcode = TEACHER_PASSCODE;
+                payload.target = document.getElementById('notifyTarget').value.trim();
+                const res = await fetch(API_URL, {
+                    method:'POST',
+                    body:new URLSearchParams({ action:'notify', payload: JSON.stringify(payload) })
+                });
+                const data = await res.json();
+                if (data.success) toast('ส่งแจ้งเตือนไป LINE เรียบร้อย ✅', 'success');
+                else toast('ส่งไม่สำเร็จ: ' + (data.error || 'ไม่ทราบสาเหตุ'), 'error');
+            }catch(err){
+                console.error(err);
+                toast('เชื่อมต่อไม่ได้: ' + err.message, 'error');
+            }finally{
+                btns.forEach(b => b.disabled = false);
+            }
+        }
+
+        async function sendIndividualNotify(){
+            const s = getNotifyStudent();
+            if (!s) return toast('เลือกผู้เรียนก่อน', 'error');
+            const items = getSelectedItems();
+            if (!items.length) return toast('เลือกอย่างน้อย 1 รายการ', 'error');
+            await postNotify({
+                kind:'individual', studentId:s.studentId, studentName:s.name, room:s.room,
+                items:items.map(i => i.name),
+                message:buildIndividualMessage(s, items)
+            });
+        }
+
+        async function sendRoomMissingSummary(){
+            const room = document.getElementById('notifyRoom').value;
+            if (!room) return toast('เลือกห้องก่อน', 'error');
+            const rows = allStudentsData.filter(s => s.room === room).map(s => ({
+                name:s.name, studentId:s.studentId, totalScore:s.totalScore,
+                missing:ASSIGNMENTS.filter(a => (s[a.key]||0) <= 0).map(a => a.name)
+            })).filter(r => r.missing.length > 0);
+            if (!rows.length) return toast('ห้องนี้ไม่มีผู้เรียนที่ขาดงาน 🎉', 'success');
+            await postNotify({
+                kind:'room', room, studentName:`ทั้งห้อง (${rows.length} คน)`,
+                items:['สรุปงานค้างส่ง'],
+                message:buildRoomSummary(room, rows)
+            });
+        }
+
+        /* ==================== อนุภาคหิมะ ==================== */
+        function createParticles(){
+            const c = document.getElementById('particles');
+            for (let i = 0; i < 28; i++){
+                const p = document.createElement('div');
+                p.className = 'particle';
+                const size = Math.random() * 4 + 2;
+                p.style.width = p.style.height = size + 'px';
+                p.style.left = Math.random() * 100 + '%';
+                p.style.animationDelay = Math.random() * 16 + 's';
+                p.style.animationDuration = (Math.random() * 10 + 12) + 's';
+                c.appendChild(p);
+            }
+        }
+
+        /* ==================== INIT ==================== */
+        document.addEventListener('DOMContentLoaded', function(){
+            applySettings();          // ใช้ค่าตั้งค่าส่วนหัวที่บันทึกไว้ (ถ้ามี)
+            createParticles();
+            // เปิดหน้าตามลิงก์ (#dashboard, #top10, #notify) ค่าเริ่มต้นคือหน้า "ค้นหาคะแนน"
+            showView((location.hash || '#search').slice(1));
+        });
+    </script>
+</body>
+</html>
