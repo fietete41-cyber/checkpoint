@@ -24,7 +24,10 @@
             --c1-rgb:14,165,233; --c3-rgb:8,145,178;
             --accent:#0ea5e9; --accent-dark:#0891b2; --on:#ffffff;
             --bg-grad:linear-gradient(-45deg,#0ea5e9,#0369a1,#06b6d4,#0891b2,#38bdf8,#0284c7);
-            --brand-grad:linear-gradient(135deg,var(--c1),var(--c-to));
+            --t-from:#0ea5e9; --t-to:#0891b2;
+            --brand-grad:linear-gradient(135deg,#0ea5e9,#0891b2);
+            --head-grad:linear-gradient(135deg,#0ea5e9 0%,#0369a1 45%,#0891b2 100%);
+            --bar-grad:linear-gradient(135deg,#0ea5e9,#0369a1);
         }
         *{ font-family:'Prompt', sans-serif; }
         html{ -webkit-text-size-adjust:100%; }
@@ -62,7 +65,7 @@
             border-bottom:1px solid rgba(255,255,255,.4);
         }
         .header-gradient{
-            background:linear-gradient(135deg,var(--c1) 0%,var(--c2) 45%,var(--c3) 100%);
+            background:var(--head-grad);
             position:relative; overflow:hidden;
         }
         .header-gradient::before{
@@ -132,11 +135,14 @@
 
         /* ===== ให้คลาส Tailwind โทนฟ้า/ไซแอนในหน้า เปลี่ยนตามธีมที่เลือก ===== */
         body .from-sky-500, body .from-sky-400, body .from-cyan-500, body .from-cyan-400{
-            --tw-gradient-from: var(--c1) var(--tw-gradient-from-position);
+            --tw-gradient-from: var(--t-from) var(--tw-gradient-from-position);
             --tw-gradient-to: rgba(var(--c1-rgb),0) var(--tw-gradient-to-position);
             --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
         }
-        body .to-cyan-600, body .to-cyan-500, body .to-teal-600, body .to-teal-500{ --tw-gradient-to: var(--c-to) var(--tw-gradient-to-position); }
+        body .to-cyan-600, body .to-cyan-500, body .to-teal-600, body .to-teal-500{ --tw-gradient-to: var(--t-to) var(--tw-gradient-to-position); }
+
+        /* โหมด "บนอ่อน → ล่างเข้ม": พื้นหลังไล่เฉดแนวตั้งแบบนิ่ง (ไม่เลื่อนเฉียง) */
+        html[data-dir="v"] body::before{ background-size:100% 100%; animation:none; }
         body .from-sky-50{
             --tw-gradient-from: rgba(var(--c1-rgb),.09) var(--tw-gradient-from-position);
             --tw-gradient-to: rgba(var(--c1-rgb),0) var(--tw-gradient-to-position);
@@ -220,7 +226,7 @@
             position:sticky; top:0; z-index:55;
             display:flex; align-items:center; gap:.6rem;
             padding: calc(.65rem + var(--safe-t)) 1rem .65rem;
-            background:linear-gradient(135deg,var(--c1),var(--c2));
+            background:var(--bar-grad);
             color:var(--on); box-shadow:0 3px 14px -6px rgba(15,23,42,.4);
         }
         .mobile-appbar img{ width:1.9rem; height:1.9rem; border-radius:9999px; object-fit:cover; background:rgba(255,255,255,.15); flex-shrink:0; }
@@ -256,7 +262,7 @@
            preset = รหัสสไตล์ (ocean, emerald, sunset, grape, sakura, gold, midnight, lagoon, aurora, berry, custom)
            tone   = 'vivid' (สีปกติ) หรือ 'pastel' (พาสเทล) | custom = สี 3 จุดของ "มิกสีเอง" */
         const THEME_KEY = 'scoreAppTheme';
-        const DEFAULT_THEME = { preset:'ocean', tone:'vivid', custom:['#0ea5e9','#7c3aed','#10b981'] };
+        const DEFAULT_THEME = { preset:'ocean', tone:'vivid', dir:'v', custom:['#0ea5e9','#7c3aed','#10b981'] };
         const THEME_PRESETS = [
             { id:'ocean',    name:'มหาสมุทร',      c:['#0ea5e9','#0369a1','#0891b2'] },
             { id:'emerald',  name:'มรกต',           c:['#10b981','#047857','#14b8a6'] },
@@ -301,19 +307,29 @@
         }
 
         // base = สี 3 จุด (ฉบับสีปกติ) -> ตัวแปรสีที่ใช้ทั้งหน้า
-        function buildThemeVars(base, tone){
-            const pastel = tone === 'pastel';
+        // เรียงสีจาก "อ่อน" ไป "เข้ม" ตามความสว่าง (ใช้กับโหมดบนอ่อน → ล่างเข้ม)
+        function lightFirst(arr){ return arr.slice().sort((a, b) => rgbToHsl(...hexToRgb(b))[2] - rgbToHsl(...hexToRgb(a))[2]); }
+
+        // dir: 'v' = ไล่แนวตั้ง บนอ่อน→ล่างเข้ม | 'd' = ไล่เฉียงแบบเดิม (พื้นหลังเคลื่อนไหว)
+        function buildThemeVars(base, tone, dir){
+            const pastel = tone === 'pastel', vert = dir !== 'd';
             const b = pastel ? pastelSet(base, .70, .88) : base.slice();
             const bg = pastel ? pastelSet(base, .84, .93) : base.slice();
-            const bgGrad = 'linear-gradient(-45deg,' + [bg[0], bg[1], bg[2], mixHex(bg[0], bg[2], .5), mixHex(bg[0], '#ffffff', pastel ? .35 : .2), mixHex(bg[1], bg[2], .5)].join(',') + ')';
+            const cTo = pastel ? b[1] : b[2];   // สีปลายของปุ่ม/ชิป (พาสเทลใช้สีกลางเพื่อให้เห็นไล่เฉดชัดกว่า)
+            const sb = lightFirst(b), sg = lightFirst(bg), pair = vert ? lightFirst([b[0], cTo]) : [b[0], cTo];
+            const bgGrad = vert
+                ? 'linear-gradient(180deg,' + [mixHex(sg[0], '#ffffff', pastel ? .4 : .22), sg[1], sg[2]].join(',') + ')'
+                : 'linear-gradient(-45deg,' + [bg[0], bg[1], bg[2], mixHex(bg[0], bg[2], .5), mixHex(bg[0], '#ffffff', pastel ? .35 : .2), mixHex(bg[1], bg[2], .5)].join(',') + ')';
+            const headGrad = vert ? 'linear-gradient(180deg,' + sb.join(',') + ')' : 'linear-gradient(135deg,' + b[0] + ' 0%,' + b[1] + ' 45%,' + b[2] + ' 100%)';
+            const barGrad  = vert ? 'linear-gradient(180deg,' + sb[0] + ',' + sb[1] + ')' : 'linear-gradient(135deg,' + b[0] + ',' + b[1] + ')';
+            const brandGrad = 'linear-gradient(' + (vert ? '180deg' : '135deg') + ',' + pair[0] + ',' + pair[1] + ')';
             const onDark = pastel || ((lumHex(b[0]) + lumHex(b[2])) / 2) > .45;
             return {
-                c1: b[0], c2: b[1], c3: b[2],
-                cTo: pastel ? b[1] : b[2],   // สีปลายของปุ่ม/ชิป (พาสเทลใช้สีกลางเพื่อให้เห็นไล่เฉดชัดกว่า)
+                c1: b[0], c2: b[1], c3: b[2], cTo, tFrom: pair[0], tTo: pair[1],
                 c1rgb: hexToRgb(b[0]).join(','), c3rgb: hexToRgb(b[2]).join(','),
                 accent: deepHex(base[0], pastel ? .42 : .52),
                 accentDark: deepHex(base[2], pastel ? .34 : .45),
-                on: onDark ? '#1e293b' : '#ffffff', onDark, bgGrad, tone
+                on: onDark ? '#1e293b' : '#ffffff', onDark, bgGrad, headGrad, barGrad, brandGrad, tone, dir: vert ? 'v' : 'd'
             };
         }
         function themeBase(t){
@@ -321,14 +337,17 @@
             return (THEME_PRESETS.find(p => p.id === t.preset) || THEME_PRESETS[0]).c;
         }
         function applyTheme(t){
-            const v = buildThemeVars(themeBase(t), t.tone);
+            const v = buildThemeVars(themeBase(t), t.tone, t.dir);
             const s = document.documentElement.style;
             s.setProperty('--c1', v.c1); s.setProperty('--c2', v.c2); s.setProperty('--c3', v.c3); s.setProperty('--c-to', v.cTo);
+            s.setProperty('--t-from', v.tFrom); s.setProperty('--t-to', v.tTo);
             s.setProperty('--c1-rgb', v.c1rgb); s.setProperty('--c3-rgb', v.c3rgb);
             s.setProperty('--accent', v.accent); s.setProperty('--accent-dark', v.accentDark);
             s.setProperty('--on', v.on); s.setProperty('--bg-grad', v.bgGrad);
+            s.setProperty('--head-grad', v.headGrad); s.setProperty('--bar-grad', v.barGrad); s.setProperty('--brand-grad', v.brandGrad);
             document.documentElement.setAttribute('data-on', v.onDark ? 'dark' : 'light');
             document.documentElement.setAttribute('data-tone', v.tone);
+            document.documentElement.setAttribute('data-dir', v.dir);
             const m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', v.c1);
         }
         function loadTheme(){
@@ -338,7 +357,8 @@
             const custom = (Array.isArray(t.custom) && t.custom.length === 3 && t.custom.every(okHex)) ? t.custom : DEFAULT_THEME.custom.slice();
             const preset = (t.preset === 'custom' || THEME_PRESETS.some(p => p.id === t.preset)) ? t.preset : DEFAULT_THEME.preset;
             const tone = t.tone === 'pastel' ? 'pastel' : (t.tone === 'vivid' ? 'vivid' : DEFAULT_THEME.tone);
-            return { preset, tone, custom };
+            const dir = t.dir === 'd' ? 'd' : (t.dir === 'v' ? 'v' : DEFAULT_THEME.dir);
+            return { preset, tone, dir, custom };
         }
         let theme = loadTheme();
         applyTheme(theme);
@@ -856,6 +876,12 @@
                         <button type="button" data-tone="pastel" onclick="setThemeTone('pastel')" class="tone-btn"><i class="fas fa-cloud mr-1"></i>พาสเทล</button>
                     </div>
 
+                    <label class="label">ทิศทางการไล่เฉด</label>
+                    <div class="inline-flex flex-wrap rounded-xl bg-slate-100 p-1 mb-5" id="dirSwitch">
+                        <button type="button" data-dir="v" onclick="setThemeDir('v')" class="tone-btn"><i class="fas fa-arrow-down mr-1"></i>บนอ่อน → ล่างเข้ม</button>
+                        <button type="button" data-dir="d" onclick="setThemeDir('d')" class="tone-btn"><i class="fas fa-arrow-down-long mr-1" style="transform:rotate(-45deg)"></i>ไล่เฉียงเคลื่อนไหว</button>
+                    </div>
+
                     <label class="label">เลือกสไตล์สี</label>
                     <div id="themeGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"></div>
 
@@ -1131,8 +1157,7 @@
         function saveTheme(){ try { localStorage.setItem(THEME_KEY, JSON.stringify(theme)); } catch (e) {} }
 
         function themePreviewGrad(base, tone){
-            const v = buildThemeVars(base, tone);
-            return 'linear-gradient(135deg,' + v.c1 + ',' + v.c2 + ',' + v.c3 + ')';
+            return buildThemeVars(base, tone, theme.dir).headGrad;
         }
 
         function renderThemeUI(){
@@ -1148,6 +1173,7 @@
                     <div class="mt-2 px-1 text-sm font-medium text-slate-700 flex items-center justify-between"><span>🎨 มิกสีเอง</span><i class="fas fa-circle-check chk"></i></div>
                 </button>`;
             document.querySelectorAll('#toneSwitch .tone-btn').forEach(b => b.classList.toggle('sel', b.dataset.tone === theme.tone));
+            document.querySelectorAll('#dirSwitch .tone-btn').forEach(b => b.classList.toggle('sel', b.dataset.dir === theme.dir));
             const box = document.getElementById('themeCustom');
             if (box) box.classList.toggle('hidden', theme.preset !== 'custom');
             theme.custom.forEach((c, i) => { const el = document.getElementById('cc' + i); if (el) el.value = c; });
@@ -1171,6 +1197,11 @@
             applyTheme(theme); saveTheme(); renderThemeUI();
         }
 
+        function setThemeDir(d){
+            theme.dir = d;
+            applyTheme(theme); saveTheme(); renderThemeUI();
+        }
+
         function onCustomColor(){
             theme.custom = [0, 1, 2].map(i => document.getElementById('cc' + i).value);
             theme.preset = 'custom';
@@ -1180,7 +1211,7 @@
         }
 
         function resetTheme(){
-            theme = { preset: DEFAULT_THEME.preset, tone: DEFAULT_THEME.tone, custom: DEFAULT_THEME.custom.slice() };
+            theme = { preset: DEFAULT_THEME.preset, tone: DEFAULT_THEME.tone, dir: DEFAULT_THEME.dir, custom: DEFAULT_THEME.custom.slice() };
             try { localStorage.removeItem(THEME_KEY); } catch (e) {}
             applyTheme(theme); renderThemeUI();
             toast('คืนค่าสีเริ่มต้นแล้ว', 'info');
