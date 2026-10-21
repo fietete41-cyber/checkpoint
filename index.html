@@ -20,11 +20,11 @@
             --safe-t: env(safe-area-inset-top, 0px);
 
             /* ===== ตัวแปรธีมสี (ค่าเริ่มต้น = ธีม "มหาสมุทร") — ถูกทับโดย applyTheme() ===== */
-            --c1:#0ea5e9; --c2:#0369a1; --c3:#0891b2;
+            --c1:#0ea5e9; --c2:#0369a1; --c3:#0891b2; --c-to:#0891b2;
             --c1-rgb:14,165,233; --c3-rgb:8,145,178;
             --accent:#0ea5e9; --accent-dark:#0891b2; --on:#ffffff;
             --bg-grad:linear-gradient(-45deg,#0ea5e9,#0369a1,#06b6d4,#0891b2,#38bdf8,#0284c7);
-            --brand-grad:linear-gradient(135deg,var(--c1),var(--c3));
+            --brand-grad:linear-gradient(135deg,var(--c1),var(--c-to));
         }
         *{ font-family:'Prompt', sans-serif; }
         html{ -webkit-text-size-adjust:100%; }
@@ -136,7 +136,7 @@
             --tw-gradient-to: rgba(var(--c1-rgb),0) var(--tw-gradient-to-position);
             --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
         }
-        body .to-cyan-600, body .to-cyan-500, body .to-teal-600, body .to-teal-500{ --tw-gradient-to: var(--c3) var(--tw-gradient-to-position); }
+        body .to-cyan-600, body .to-cyan-500, body .to-teal-600, body .to-teal-500{ --tw-gradient-to: var(--c-to) var(--tw-gradient-to-position); }
         body .from-sky-50{
             --tw-gradient-from: rgba(var(--c1-rgb),.09) var(--tw-gradient-from-position);
             --tw-gradient-to: rgba(var(--c1-rgb),0) var(--tw-gradient-to-position);
@@ -245,7 +245,7 @@
         .bottom-nav button.bn-active i{ transform:translateY(-2px) scale(1.08); }
         .bottom-nav button.bn-active::before{
             content:''; position:absolute; top:0; width:2rem; height:3px; border-radius:0 0 3px 3px;
-            background:linear-gradient(90deg,var(--c1),var(--c3));
+            background:linear-gradient(90deg,var(--c1),var(--c-to));
         }
         .bottom-nav button{ position:relative; }
     </style>
@@ -293,15 +293,23 @@
         function deepHex(hex, maxL){ const [h, s, l] = rgbToHsl(...hexToRgb(hex)); return rgbToHex(...hslToRgb(h, s, Math.min(l, maxL))); }
         function lumHex(hex){ const c = hexToRgb(hex).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }); return .2126 * c[0] + .7152 * c[1] + .0722 * c[2]; }
 
+        // แปลงสี 3 จุดเป็นพาสเทล โดย "คงความต่างอ่อน-เข้ม" ของแต่ละสีไว้ (ช่วงความสว่าง lo..hi) เพื่อให้ยังเห็นการไล่เฉด
+        function pastelSet(base, lo, hi){
+            const ls = base.map(c => rgbToHsl(...hexToRgb(c))[2]);
+            const mn = Math.min(...ls), mx = Math.max(...ls), sp = mx - mn;
+            return base.map((c, i) => pastelHex(c, sp > .05 ? lo + (ls[i] - mn) / sp * (hi - lo) : (lo + hi) / 2));
+        }
+
         // base = สี 3 จุด (ฉบับสีปกติ) -> ตัวแปรสีที่ใช้ทั้งหน้า
         function buildThemeVars(base, tone){
             const pastel = tone === 'pastel';
-            const b = pastel ? base.map(c => pastelHex(c, .78)) : base.slice();
-            const bg = pastel ? [pastelHex(base[0], .90), pastelHex(base[1], .86), pastelHex(base[2], .92)] : base.slice();
+            const b = pastel ? pastelSet(base, .70, .88) : base.slice();
+            const bg = pastel ? pastelSet(base, .84, .93) : base.slice();
             const bgGrad = 'linear-gradient(-45deg,' + [bg[0], bg[1], bg[2], mixHex(bg[0], bg[2], .5), mixHex(bg[0], '#ffffff', pastel ? .35 : .2), mixHex(bg[1], bg[2], .5)].join(',') + ')';
-            const onDark = ((lumHex(b[0]) + lumHex(b[2])) / 2) > .45;
+            const onDark = pastel || ((lumHex(b[0]) + lumHex(b[2])) / 2) > .45;
             return {
                 c1: b[0], c2: b[1], c3: b[2],
+                cTo: pastel ? b[1] : b[2],   // สีปลายของปุ่ม/ชิป (พาสเทลใช้สีกลางเพื่อให้เห็นไล่เฉดชัดกว่า)
                 c1rgb: hexToRgb(b[0]).join(','), c3rgb: hexToRgb(b[2]).join(','),
                 accent: deepHex(base[0], pastel ? .42 : .52),
                 accentDark: deepHex(base[2], pastel ? .34 : .45),
@@ -315,7 +323,7 @@
         function applyTheme(t){
             const v = buildThemeVars(themeBase(t), t.tone);
             const s = document.documentElement.style;
-            s.setProperty('--c1', v.c1); s.setProperty('--c2', v.c2); s.setProperty('--c3', v.c3);
+            s.setProperty('--c1', v.c1); s.setProperty('--c2', v.c2); s.setProperty('--c3', v.c3); s.setProperty('--c-to', v.cTo);
             s.setProperty('--c1-rgb', v.c1rgb); s.setProperty('--c3-rgb', v.c3rgb);
             s.setProperty('--accent', v.accent); s.setProperty('--accent-dark', v.accentDark);
             s.setProperty('--on', v.on); s.setProperty('--bg-grad', v.bgGrad);
