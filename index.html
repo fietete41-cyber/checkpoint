@@ -18,6 +18,13 @@
             --ice-500:#0ea5e9; --ice-600:#0891b2; --navy:#0f172a;
             --safe-b: env(safe-area-inset-bottom, 0px);
             --safe-t: env(safe-area-inset-top, 0px);
+
+            /* ===== ตัวแปรธีมสี (ค่าเริ่มต้น = ธีม "มหาสมุทร") — ถูกทับโดย applyTheme() ===== */
+            --c1:#0ea5e9; --c2:#0369a1; --c3:#0891b2;
+            --c1-rgb:14,165,233; --c3-rgb:8,145,178;
+            --accent:#0ea5e9; --accent-dark:#0891b2; --on:#ffffff;
+            --bg-grad:linear-gradient(-45deg,#0ea5e9,#0369a1,#06b6d4,#0891b2,#38bdf8,#0284c7);
+            --brand-grad:linear-gradient(135deg,var(--c1),var(--c3));
         }
         *{ font-family:'Prompt', sans-serif; }
         html{ -webkit-text-size-adjust:100%; }
@@ -27,15 +34,15 @@
         /* พื้นหลังไล่สีโทนเย็น (เครื่องทำความเย็น/ปรับอากาศ) */
         body::before{
             content:''; position:fixed; inset:0; z-index:-2;
-            background:linear-gradient(-45deg,#0ea5e9,#0369a1,#06b6d4,#0891b2,#38bdf8,#0284c7);
+            background:var(--bg-grad);
             background-size:400% 400%;
             animation:gradientShift 22s ease infinite;
         }
         body::after{
             content:''; position:fixed; inset:0; z-index:-1;
             background:
-                radial-gradient(circle at 15% 80%, rgba(56,189,248,.30) 0%, transparent 45%),
-                radial-gradient(circle at 85% 15%, rgba(14,165,233,.28) 0%, transparent 45%),
+                radial-gradient(circle at 15% 80%, rgba(var(--c1-rgb),.30) 0%, transparent 45%),
+                radial-gradient(circle at 85% 15%, rgba(var(--c3-rgb),.28) 0%, transparent 45%),
                 radial-gradient(circle at 50% 45%, rgba(255,255,255,.22) 0%, transparent 55%);
             animation:floatingOrbs 26s ease-in-out infinite;
         }
@@ -55,7 +62,7 @@
             border-bottom:1px solid rgba(255,255,255,.4);
         }
         .header-gradient{
-            background:linear-gradient(135deg,#0ea5e9 0%,#0369a1 45%,#0891b2 100%);
+            background:linear-gradient(135deg,var(--c1) 0%,var(--c2) 45%,var(--c3) 100%);
             position:relative; overflow:hidden;
         }
         .header-gradient::before{
@@ -73,45 +80,85 @@
             width:100%; padding:.7rem 1rem; border:2px solid #e2e8f0; border-radius:.9rem;
             background:#fff; transition:.2s; font-size:.95rem; color:#1e293b;
         }
-        .input-field:focus{ outline:none; border-color:var(--ice-500); box-shadow:0 0 0 4px rgba(14,165,233,.14); }
+        .input-field:focus{ outline:none; border-color:var(--c1); box-shadow:0 0 0 4px rgba(var(--c1-rgb),.14); }
         .label{ display:block; font-size:.8rem; font-weight:600; color:#475569; margin-bottom:.4rem; }
         .btn-primary{
             display:inline-flex; align-items:center; justify-content:center;
-            background:linear-gradient(135deg,#0ea5e9,#0891b2); color:#fff;
+            background:var(--brand-grad); color:var(--on);
             padding:.75rem 1.5rem; border-radius:.9rem; font-weight:600; transition:.2s;
-            box-shadow:0 12px 24px -8px rgba(8,145,178,.55); border:none; cursor:pointer;
+            box-shadow:0 12px 24px -8px rgba(var(--c3-rgb),.55); border:none; cursor:pointer;
         }
-        .btn-primary:hover{ transform:translateY(-2px); box-shadow:0 16px 30px -8px rgba(8,145,178,.65); }
+        .btn-primary:hover{ transform:translateY(-2px); box-shadow:0 16px 30px -8px rgba(var(--c3-rgb),.65); }
         .btn-primary:disabled{ opacity:.55; cursor:not-allowed; transform:none; }
         .btn-secondary{
             display:inline-flex; align-items:center; justify-content:center;
-            background:#fff; color:#0891b2; border:2px solid #a5f3fc;
+            background:#fff; color:var(--accent-dark); border:2px solid rgba(var(--c1-rgb),.35);
             padding:.75rem 1.5rem; border-radius:.9rem; font-weight:600; transition:.2s; cursor:pointer;
         }
-        .btn-secondary:hover{ background:#ecfeff; }
+        .btn-secondary:hover{ background:rgba(var(--c1-rgb),.08); }
         .btn-secondary:disabled{ opacity:.55; cursor:not-allowed; }
 
         .step-badge{
             width:2rem; height:2rem; flex-shrink:0; display:flex; align-items:center; justify-content:center;
-            border-radius:.75rem; background:linear-gradient(135deg,#0ea5e9,#0891b2);
-            color:#fff; font-weight:700; font-size:.9rem;
+            border-radius:.75rem; background:var(--brand-grad);
+            color:var(--on); font-weight:700; font-size:.9rem;
         }
         .nav-pill{
             display:flex; align-items:center; gap:.5rem; padding:.6rem 1.25rem; border-radius:9999px;
-            font-weight:500; color:#0369a1; background:#e0f2fe; transition:.2s; cursor:pointer; border:none;
+            font-weight:500; color:var(--accent-dark); background:rgba(var(--c1-rgb),.12); transition:.2s; cursor:pointer; border:none;
         }
-        .nav-pill:hover{ background:#0ea5e9; color:#fff; transform:translateY(-2px); }
+        .nav-pill:hover{ background:var(--c1); color:var(--on); transform:translateY(-2px); }
         .nav-pill-active,
         .nav-pill-active:hover{
-            background:linear-gradient(135deg,#0ea5e9,#0891b2); color:#fff;
-            box-shadow:0 8px 18px -6px rgba(8,145,178,.55); transform:none;
+            background:var(--brand-grad); color:var(--on);
+            box-shadow:0 8px 18px -6px rgba(var(--c3-rgb),.55); transform:none;
         }
         .view{ animation:viewIn .28s ease; }
         @keyframes viewIn{ from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:translateY(0)} }
-        .room-tab{ background:#e0f2fe; color:#0369a1; border:none; cursor:pointer; }
-        .room-tab:hover{ background:#bae6fd; }
+        .room-tab{ background:rgba(var(--c1-rgb),.12); color:var(--accent-dark); border:none; cursor:pointer; }
+        .room-tab:hover{ background:rgba(var(--c1-rgb),.24); }
         .room-tab-active,
-        .room-tab-active:hover{ background:linear-gradient(135deg,#0ea5e9,#0891b2); color:#fff; box-shadow:0 6px 14px -6px rgba(8,145,178,.55); }
+        .room-tab-active:hover{ background:var(--brand-grad); color:var(--on); box-shadow:0 6px 14px -6px rgba(var(--c3-rgb),.55); }
+
+        /* ===== ตัวเลือกธีมสี (หน้าตั้งค่า) ===== */
+        .tone-btn{ padding:.5rem 1.1rem; border-radius:.7rem; font-weight:600; font-size:.85rem; color:#64748b; transition:.2s; border:none; background:transparent; cursor:pointer; }
+        .tone-btn.sel{ background:#fff; color:var(--accent-dark); box-shadow:0 2px 8px -2px rgba(15,23,42,.25); }
+        .theme-tile{ border:2px solid #e2e8f0; background:#fff; border-radius:1rem; padding:.5rem; text-align:left; cursor:pointer; transition:.2s; }
+        .theme-tile:hover{ transform:translateY(-2px); box-shadow:0 10px 22px -12px rgba(15,23,42,.35); }
+        .theme-tile.sel{ border-color:var(--accent); box-shadow:0 0 0 3px rgba(var(--c1-rgb),.2); }
+        .theme-tile .chk{ opacity:0; color:var(--accent); }
+        .theme-tile.sel .chk{ opacity:1; }
+        input[type=color].color-pick{ width:100%; height:2.75rem; border:2px solid #e2e8f0; border-radius:.8rem; padding:.2rem; background:#fff; cursor:pointer; }
+
+        /* ===== ให้คลาส Tailwind โทนฟ้า/ไซแอนในหน้า เปลี่ยนตามธีมที่เลือก ===== */
+        body .from-sky-500, body .from-sky-400, body .from-cyan-500, body .from-cyan-400{
+            --tw-gradient-from: var(--c1) var(--tw-gradient-from-position);
+            --tw-gradient-to: rgba(var(--c1-rgb),0) var(--tw-gradient-to-position);
+            --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+        }
+        body .to-cyan-600, body .to-cyan-500, body .to-teal-600, body .to-teal-500{ --tw-gradient-to: var(--c3) var(--tw-gradient-to-position); }
+        body .from-sky-50{
+            --tw-gradient-from: rgba(var(--c1-rgb),.09) var(--tw-gradient-from-position);
+            --tw-gradient-to: rgba(var(--c1-rgb),0) var(--tw-gradient-to-position);
+            --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+        }
+        body .to-cyan-50{ --tw-gradient-to: rgba(var(--c3-rgb),.10) var(--tw-gradient-to-position); }
+        body .text-sky-500, body .text-sky-400, body .text-cyan-500{ color:var(--accent); }
+        body .text-sky-600, body .text-sky-700, body .text-teal-700{ color:var(--accent-dark); }
+        body .bg-sky-500, body .hover\:bg-sky-500:hover{ background-color:var(--c1); }
+        body .border-sky-500, body .border-sky-300, body .focus\:border-sky-500:focus{ border-color:var(--c1); }
+        body .hover\:bg-sky-50:hover{ background-color:rgba(var(--c1-rgb),.10); }
+        body .accent-sky-600{ accent-color:var(--c3); }
+        body .shadow-cyan-500\/30{ --tw-shadow-color:rgba(var(--c3-rgb),.3); --tw-shadow:var(--tw-shadow-colored); }
+
+        /* เมื่อสีพื้นหลังอ่อน (พาสเทล / สีสว่าง) ให้ตัวอักษรบนพื้นสีแบรนด์เป็นสีเข้ม */
+        html[data-on="dark"] header.header-gradient,
+        html[data-on="dark"] .mobile-appbar,
+        html[data-on="dark"] [class*="from-sky-500"], html[data-on="dark"] [class*="from-sky-400"],
+        html[data-on="dark"] [class*="from-cyan-500"], html[data-on="dark"] [class*="from-cyan-400"],
+        html[data-on="dark"] .bg-sky-500{ color:var(--on); }
+        html[data-on="dark"] [class*="from-sky-500"] .text-white, html[data-on="dark"] [class*="from-sky-400"] .text-white,
+        html[data-on="dark"] [class*="from-cyan-500"] .text-white, html[data-on="dark"] [class*="from-cyan-400"] .text-white{ color:var(--on); }
 
         .grade-A{ background:linear-gradient(135deg,#4ade80,#22c55e); }
         .grade-B{ background:linear-gradient(135deg,#60a5fa,#3b82f6); }
@@ -173,8 +220,8 @@
             position:sticky; top:0; z-index:55;
             display:flex; align-items:center; gap:.6rem;
             padding: calc(.65rem + var(--safe-t)) 1rem .65rem;
-            background:linear-gradient(135deg,#0ea5e9,#0369a1);
-            color:#fff; box-shadow:0 3px 14px -6px rgba(15,23,42,.4);
+            background:linear-gradient(135deg,var(--c1),var(--c2));
+            color:var(--on); box-shadow:0 3px 14px -6px rgba(15,23,42,.4);
         }
         .mobile-appbar img{ width:1.9rem; height:1.9rem; border-radius:9999px; object-fit:cover; background:rgba(255,255,255,.15); flex-shrink:0; }
 
@@ -194,14 +241,100 @@
             transition:color .15s ease;
         }
         .bottom-nav button i{ font-size:1.15rem; transition:transform .15s ease; }
-        .bottom-nav button.bn-active{ color:#0ea5e9; }
+        .bottom-nav button.bn-active{ color:var(--accent); }
         .bottom-nav button.bn-active i{ transform:translateY(-2px) scale(1.08); }
         .bottom-nav button.bn-active::before{
             content:''; position:absolute; top:0; width:2rem; height:3px; border-radius:0 0 3px 3px;
-            background:linear-gradient(90deg,#0ea5e9,#0891b2);
+            background:linear-gradient(90deg,var(--c1),var(--c3));
         }
         .bottom-nav button{ position:relative; }
     </style>
+
+    <!-- ===== ระบบธีมสี: ทำงานก่อนหน้าเว็บแสดงผล เพื่อไม่ให้สีกระพริบ ===== -->
+    <script>
+        /* แก้ DEFAULT_THEME ตรงนี้ถ้าต้องการให้ "ทุกเครื่อง" เริ่มต้นด้วยธีมเดียวกัน
+           preset = รหัสสไตล์ (ocean, emerald, sunset, grape, sakura, gold, midnight, lagoon, aurora, berry, custom)
+           tone   = 'vivid' (สีปกติ) หรือ 'pastel' (พาสเทล) | custom = สี 3 จุดของ "มิกสีเอง" */
+        const THEME_KEY = 'scoreAppTheme';
+        const DEFAULT_THEME = { preset:'ocean', tone:'vivid', custom:['#0ea5e9','#7c3aed','#10b981'] };
+        const THEME_PRESETS = [
+            { id:'ocean',    name:'มหาสมุทร',      c:['#0ea5e9','#0369a1','#0891b2'] },
+            { id:'emerald',  name:'มรกต',           c:['#10b981','#047857','#14b8a6'] },
+            { id:'sunset',   name:'อาทิตย์อัสดง',   c:['#f97316','#be123c','#e11d48'] },
+            { id:'grape',    name:'องุ่นม่วง',      c:['#8b5cf6','#5b21b6','#d946ef'] },
+            { id:'sakura',   name:'ซากุระ',         c:['#ec4899','#be185d','#f472b6'] },
+            { id:'gold',     name:'ทองอำพัน',       c:['#f59e0b','#92400e','#d97706'] },
+            { id:'midnight', name:'ราตรี',          c:['#3b82f6','#1e3a8a','#6366f1'] },
+            { id:'lagoon',   name:'ลากูน',          c:['#14b8a6','#0f766e','#22d3ee'] },
+            { id:'aurora',   name:'ออโรรา',         c:['#06b6d4','#7c3aed','#10b981'] },
+            { id:'berry',    name:'เบอร์รี่',        c:['#ef4444','#991b1b','#f43f5e'] }
+        ];
+
+        function hexToRgb(h){ h = String(h).replace('#',''); if (h.length === 3) h = h.split('').map(x => x + x).join(''); const n = parseInt(h, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+        function rgbToHex(r, g, b){ return '#' + [r, g, b].map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join(''); }
+        function rgbToHsl(r, g, b){
+            r /= 255; g /= 255; b /= 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b); let h = 0, s = 0; const l = (max + min) / 2;
+            if (max !== min){
+                const d = max - min; s = l > .5 ? d / (2 - max - min) : d / (max + min);
+                if (max === r) h = (g - b) / d + (g < b ? 6 : 0); else if (max === g) h = (b - r) / d + 2; else h = (r - g) / d + 4;
+                h /= 6;
+            }
+            return [h, s, l];
+        }
+        function hslToRgb(h, s, l){
+            if (s === 0){ const v = l * 255; return [v, v, v]; }
+            const q = l < .5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
+            const f = t => { if (t < 0) t += 1; if (t > 1) t -= 1; if (t < 1/6) return p + (q - p) * 6 * t; if (t < 1/2) return q; if (t < 2/3) return p + (q - p) * (2/3 - t) * 6; return p; };
+            return [f(h + 1/3) * 255, f(h) * 255, f(h - 1/3) * 255];
+        }
+        function mixHex(a, b, t){ const A = hexToRgb(a), B = hexToRgb(b); return rgbToHex(A[0] + (B[0] - A[0]) * t, A[1] + (B[1] - A[1]) * t, A[2] + (B[2] - A[2]) * t); }
+        function pastelHex(hex, L){ const [h, s] = rgbToHsl(...hexToRgb(hex)); const s2 = s < .1 ? s : Math.max(.5, Math.min(.85, s)); return rgbToHex(...hslToRgb(h, s2, L)); }
+        function deepHex(hex, maxL){ const [h, s, l] = rgbToHsl(...hexToRgb(hex)); return rgbToHex(...hslToRgb(h, s, Math.min(l, maxL))); }
+        function lumHex(hex){ const c = hexToRgb(hex).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }); return .2126 * c[0] + .7152 * c[1] + .0722 * c[2]; }
+
+        // base = สี 3 จุด (ฉบับสีปกติ) -> ตัวแปรสีที่ใช้ทั้งหน้า
+        function buildThemeVars(base, tone){
+            const pastel = tone === 'pastel';
+            const b = pastel ? base.map(c => pastelHex(c, .78)) : base.slice();
+            const bg = pastel ? [pastelHex(base[0], .90), pastelHex(base[1], .86), pastelHex(base[2], .92)] : base.slice();
+            const bgGrad = 'linear-gradient(-45deg,' + [bg[0], bg[1], bg[2], mixHex(bg[0], bg[2], .5), mixHex(bg[0], '#ffffff', pastel ? .35 : .2), mixHex(bg[1], bg[2], .5)].join(',') + ')';
+            const onDark = ((lumHex(b[0]) + lumHex(b[2])) / 2) > .45;
+            return {
+                c1: b[0], c2: b[1], c3: b[2],
+                c1rgb: hexToRgb(b[0]).join(','), c3rgb: hexToRgb(b[2]).join(','),
+                accent: deepHex(base[0], pastel ? .42 : .52),
+                accentDark: deepHex(base[2], pastel ? .34 : .45),
+                on: onDark ? '#1e293b' : '#ffffff', onDark, bgGrad, tone
+            };
+        }
+        function themeBase(t){
+            if (t.preset === 'custom') return t.custom;
+            return (THEME_PRESETS.find(p => p.id === t.preset) || THEME_PRESETS[0]).c;
+        }
+        function applyTheme(t){
+            const v = buildThemeVars(themeBase(t), t.tone);
+            const s = document.documentElement.style;
+            s.setProperty('--c1', v.c1); s.setProperty('--c2', v.c2); s.setProperty('--c3', v.c3);
+            s.setProperty('--c1-rgb', v.c1rgb); s.setProperty('--c3-rgb', v.c3rgb);
+            s.setProperty('--accent', v.accent); s.setProperty('--accent-dark', v.accentDark);
+            s.setProperty('--on', v.on); s.setProperty('--bg-grad', v.bgGrad);
+            document.documentElement.setAttribute('data-on', v.onDark ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-tone', v.tone);
+            const m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', v.c1);
+        }
+        function loadTheme(){
+            let t = {};
+            try { t = JSON.parse(localStorage.getItem(THEME_KEY)) || {}; } catch (e) {}
+            const okHex = h => /^#[0-9a-f]{6}$/i.test(h);
+            const custom = (Array.isArray(t.custom) && t.custom.length === 3 && t.custom.every(okHex)) ? t.custom : DEFAULT_THEME.custom.slice();
+            const preset = (t.preset === 'custom' || THEME_PRESETS.some(p => p.id === t.preset)) ? t.preset : DEFAULT_THEME.preset;
+            const tone = t.tone === 'pastel' ? 'pastel' : (t.tone === 'vivid' ? 'vivid' : DEFAULT_THEME.tone);
+            return { preset, tone, custom };
+        }
+        let theme = loadTheme();
+        applyTheme(theme);
+    </script>
 </head>
 <body class="min-h-screen relative overflow-x-hidden">
 
@@ -701,6 +834,39 @@
                     <p class="text-xs text-slate-400 mt-3"><i class="fas fa-circle-info mr-1"></i>รหัสใหม่บันทึกที่เซิร์ฟเวอร์ (ชีต Config) — ใช้ได้ทันทีทุกเครื่อง ไม่ต้องแก้ไฟล์ · หากลืมรหัส ลบชีต "Config" ในสเปรดชีตเพื่อกลับไปใช้รหัสในโค้ด</p>
                 </div>
 
+                <!-- ==== ธีมสีของระบบ ==== -->
+                <div class="frost-card rounded-3xl p-5 sm:p-6 md:p-8">
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="w-9 h-9 flex items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-cyan-600 text-white shrink-0"><i class="fas fa-palette"></i></span>
+                        <h3 class="text-base sm:text-lg font-bold text-slate-800">ธีมสีของระบบ</h3>
+                    </div>
+                    <p class="text-xs sm:text-sm text-slate-500 mb-5">เลือกสีไล่เฉดสำเร็จรูป 10 แบบ หรือมิกสีเอง · เลือกได้ว่าจะใช้สีปกติหรือพาสเทล — เห็นผลทันทีและจำไว้ในเครื่องนี้อัตโนมัติ</p>
+
+                    <label class="label">โทนสี</label>
+                    <div class="inline-flex rounded-xl bg-slate-100 p-1 mb-5" id="toneSwitch">
+                        <button type="button" data-tone="vivid" onclick="setThemeTone('vivid')" class="tone-btn"><i class="fas fa-droplet mr-1"></i>สีปกติ</button>
+                        <button type="button" data-tone="pastel" onclick="setThemeTone('pastel')" class="tone-btn"><i class="fas fa-cloud mr-1"></i>พาสเทล</button>
+                    </div>
+
+                    <label class="label">เลือกสไตล์สี</label>
+                    <div id="themeGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"></div>
+
+                    <div id="themeCustom" class="hidden mt-4 rounded-2xl border border-slate-200 bg-white/70 p-4">
+                        <div class="text-sm font-semibold text-slate-700 mb-3"><i class="fas fa-wand-magic-sparkles mr-2" style="color:var(--accent)"></i>มิกสีเอง (ไล่เฉด 3 สี)</div>
+                        <div class="grid sm:grid-cols-3 gap-3">
+                            <div><label class="label">สีที่ 1 (เริ่มต้น)</label><input type="color" id="cc0" class="color-pick" oninput="onCustomColor()"></div>
+                            <div><label class="label">สีที่ 2 (กลาง)</label><input type="color" id="cc1" class="color-pick" oninput="onCustomColor()"></div>
+                            <div><label class="label">สีที่ 3 (ปลาย)</label><input type="color" id="cc2" class="color-pick" oninput="onCustomColor()"></div>
+                        </div>
+                        <div id="customBar" class="mt-3 h-10 rounded-xl"></div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-3 mt-5">
+                        <button onclick="resetTheme()" class="btn-secondary"><i class="fas fa-rotate-left mr-2"></i>คืนค่าสีเริ่มต้น</button>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-3"><i class="fas fa-circle-info mr-1"></i>ธีมสีบันทึกในเบราว์เซอร์เครื่องนี้ — หากต้องการให้ทุกเครื่องเห็นสีเดียวกัน ให้แก้ <code>DEFAULT_THEME</code> ในไฟล์ index.html</p>
+                </div>
+
                 <!-- ==== ตั้งค่าส่วนหัว (Header) ==== -->
                 <div class="frost-card rounded-3xl p-5 sm:p-6 md:p-8">
                     <div class="flex items-center gap-3 mb-4">
@@ -953,6 +1119,65 @@
             if (target){ target.value = ic; previewSettings(); target.focus(); }
         }
 
+        /* ==================== ธีมสี (ตัวเลือกในหน้าตั้งค่า) ==================== */
+        function saveTheme(){ try { localStorage.setItem(THEME_KEY, JSON.stringify(theme)); } catch (e) {} }
+
+        function themePreviewGrad(base, tone){
+            const v = buildThemeVars(base, tone);
+            return 'linear-gradient(135deg,' + v.c1 + ',' + v.c2 + ',' + v.c3 + ')';
+        }
+
+        function renderThemeUI(){
+            const grid = document.getElementById('themeGrid');
+            if (!grid) return;
+            grid.innerHTML = THEME_PRESETS.map(p => `
+                <button type="button" class="theme-tile ${theme.preset === p.id ? 'sel' : ''}" onclick="selectPreset('${p.id}')">
+                    <div class="h-14 rounded-xl" style="background:${themePreviewGrad(p.c, theme.tone)}"></div>
+                    <div class="mt-2 px-1 text-sm font-medium text-slate-700 flex items-center justify-between"><span>${p.name}</span><i class="fas fa-circle-check chk"></i></div>
+                </button>`).join('') + `
+                <button type="button" id="customTile" class="theme-tile ${theme.preset === 'custom' ? 'sel' : ''}" onclick="selectPreset('custom')">
+                    <div class="h-14 rounded-xl" style="background:${themePreviewGrad(theme.custom, theme.tone)}"></div>
+                    <div class="mt-2 px-1 text-sm font-medium text-slate-700 flex items-center justify-between"><span>🎨 มิกสีเอง</span><i class="fas fa-circle-check chk"></i></div>
+                </button>`;
+            document.querySelectorAll('#toneSwitch .tone-btn').forEach(b => b.classList.toggle('sel', b.dataset.tone === theme.tone));
+            const box = document.getElementById('themeCustom');
+            if (box) box.classList.toggle('hidden', theme.preset !== 'custom');
+            theme.custom.forEach((c, i) => { const el = document.getElementById('cc' + i); if (el) el.value = c; });
+            updateCustomBar();
+        }
+
+        function updateCustomBar(){
+            const g = themePreviewGrad(theme.custom, theme.tone);
+            const bar = document.getElementById('customBar'); if (bar) bar.style.background = g;
+            const tile = document.querySelector('#customTile > div'); if (tile) tile.style.background = g;
+        }
+
+        function selectPreset(id){
+            theme.preset = id;
+            applyTheme(theme); saveTheme(); renderThemeUI();
+            toast('เปลี่ยนธีมสีแล้ว', 'success');
+        }
+
+        function setThemeTone(t){
+            theme.tone = t;
+            applyTheme(theme); saveTheme(); renderThemeUI();
+        }
+
+        function onCustomColor(){
+            theme.custom = [0, 1, 2].map(i => document.getElementById('cc' + i).value);
+            theme.preset = 'custom';
+            applyTheme(theme); saveTheme(); updateCustomBar();
+            document.querySelectorAll('#themeGrid .theme-tile').forEach(b => b.classList.toggle('sel', b.id === 'customTile'));
+            document.getElementById('themeCustom')?.classList.remove('hidden');
+        }
+
+        function resetTheme(){
+            theme = { preset: DEFAULT_THEME.preset, tone: DEFAULT_THEME.tone, custom: DEFAULT_THEME.custom.slice() };
+            try { localStorage.removeItem(THEME_KEY); } catch (e) {}
+            applyTheme(theme); renderThemeUI();
+            toast('คืนค่าสีเริ่มต้นแล้ว', 'info');
+        }
+
         const DEFAULT_ASSIGNMENTS = [
             { key:'score1', name:'ความรู้ทั่วไป', max:10 },
             { key:'score2', name:'ตัดดัดท่อ',     max:10 },
@@ -1055,12 +1280,13 @@
             const map = {
                 success:{ bg:'linear-gradient(135deg,#10b981,#059669)', icon:'check-circle' },
                 error:  { bg:'linear-gradient(135deg,#f43f5e,#e11d48)', icon:'circle-exclamation' },
-                info:   { bg:'linear-gradient(135deg,#0ea5e9,#0891b2)', icon:'circle-info' }
+                info:   { bg:'var(--brand-grad)', color:'var(--on)', icon:'circle-info' }
             };
             const c = map[type] || map.info;
             const el = document.createElement('div');
             el.className = 'toast';
             el.style.background = c.bg;
+            if (c.color) el.style.color = c.color;
             el.innerHTML = `<i class="fas fa-${c.icon} text-lg"></i><span class="font-medium">${msg}</span>`;
             wrap.appendChild(el);
             setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateX(24px)'; setTimeout(() => el.remove(), 300); }, 4200);
@@ -1575,6 +1801,7 @@
             if (!unlocked) return;
             if (view === 'notify'){
                 fillSettingsForm();
+                renderThemeUI();
                 const _pc = document.getElementById('pwCur'); if (_pc) _pc.value = activePasscode;
             } else if (view === 'scores'){
                 initScoresPanel();
