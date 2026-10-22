@@ -933,6 +933,30 @@
                     </div>
                 </div>
 
+                <!-- ==== เติมปีหน้ารหัสผู้เรียน (5 หลัก -> 7 หลัก) ==== -->
+                <div class="frost-card rounded-3xl p-5 sm:p-6 md:p-8">
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="w-9 h-9 flex items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shrink-0"><i class="fas fa-hashtag"></i></span>
+                        <h3 class="text-base sm:text-lg font-bold text-slate-800">เติมปีที่เข้าศึกษาหน้ารหัสผู้เรียน</h3>
+                    </div>
+                    <p class="text-xs sm:text-sm text-slate-500 mb-4">แปลงรหัสเดิมที่เป็นเลข 5 หลัก เป็นรหัส 7 หลัก (ปี 2 หลัก + เลข 5 หลัก) เช่น <b>40001</b> → <b>6740001</b> · ใช้ได้กับทุกวิชา กำหนดปีแยกตามวิชา/ห้องได้ (รุ่นต่างปีอยู่คนละห้อง) · ข้อมูลคะแนนไม่เปลี่ยน</p>
+                    <button type="button" onclick="loadIdSurvey()" class="btn-secondary text-sm"><i class="fas fa-magnifying-glass mr-2"></i>ตรวจรหัส 5 หลักในทุกวิชา</button>
+
+                    <div id="idSurveyBox" class="hidden mt-4">
+                        <div id="idSurveyEmpty" class="hidden text-sm text-emerald-700 bg-emerald-50 rounded-xl px-4 py-3"><i class="fas fa-circle-check mr-2"></i>ไม่มีรหัส 5 หลักเหลืออยู่ — ทุกวิชาเป็นรหัสที่มีปีนำหน้าแล้ว</div>
+                        <div id="idSurveyWrap" class="hidden">
+                            <div class="flex flex-wrap items-center gap-2 mb-3 text-sm">
+                                <span class="text-slate-600">ใช้ปีเดียวกันทุกแถว:</span>
+                                <input type="text" id="idYearAll" inputmode="numeric" maxlength="2" placeholder="67" class="input-field !w-20 text-center">
+                                <button type="button" onclick="fillAllYears()" class="btn-secondary text-sm !w-auto">ใส่ให้ทุกแถว</button>
+                            </div>
+                            <div class="table-responsive"><table class="w-full text-sm" style="min-width:0"><tbody id="idSurveyBody"></tbody></table></div>
+                            <button type="button" id="idPrefixBtn" onclick="applyPrefixIds()" class="btn-primary mt-4"><i class="fas fa-wand-magic-sparkles mr-2"></i>เติมปีให้แถวที่กรอกปีไว้</button>
+                            <p class="text-xs text-slate-400 mt-2">แถวที่เว้นปีไว้จะไม่ถูกแก้ · รหัสที่เติมแล้วซ้ำกับรหัสที่มีอยู่จะถูกข้าม</p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- ==== เปลี่ยนรหัสผ่าน ==== -->
                 <div class="frost-card rounded-3xl p-5 sm:p-6 md:p-8">
                     <div class="flex items-center gap-3 mb-4">
@@ -2423,6 +2447,61 @@
             if (!ok) return;
             const res = await postAdmin('deleteSubject', { id: s.id, subject: '' });
             if (res && res.success){ toast('เอารายวิชาออกจากรายการแล้ว — กู้คืนได้ที่ "วิชาที่ถูกเอาออกจากรายการ"', 'success'); await refreshSubjectsAfterChange(); }
+        }
+
+        /* ---- เติมปีที่เข้าศึกษาหน้ารหัสผู้เรียน 5 หลัก -> 7 หลัก ---- */
+        let idSurveyRows = [];
+
+        async function loadIdSurvey(){
+            const res = await postAdmin('idSurvey', { subject: '' });
+            if (!res || !res.success) return;
+            idSurveyRows = res.rows || [];
+            document.getElementById('idSurveyBox').classList.remove('hidden');
+            document.getElementById('idSurveyEmpty').classList.toggle('hidden', idSurveyRows.length > 0);
+            document.getElementById('idSurveyWrap').classList.toggle('hidden', idSurveyRows.length === 0);
+            document.getElementById('idSurveyBody').innerHTML =
+                '<tr class="bg-slate-100 text-slate-600 text-left"><th class="px-3 py-2">วิชา</th><th class="px-3 py-2">ห้อง</th><th class="px-3 py-2">รหัส 5 หลัก</th><th class="px-3 py-2 w-24">ปี (2 หลัก)</th></tr>' +
+                idSurveyRows.map((r, i) => `
+                    <tr class="border-b border-slate-100">
+                        <td class="px-3 py-2">${escHtml(r.subjectName || r.subject)}</td>
+                        <td class="px-3 py-2">${escHtml(r.room) || '<span class="text-slate-400">(ไม่ระบุห้อง)</span>'}</td>
+                        <td class="px-3 py-2 whitespace-nowrap">${r.five} / ${r.total} คน</td>
+                        <td class="px-3 py-2"><input type="text" inputmode="numeric" maxlength="2" data-idx="${i}" class="input-field id-year text-center !py-1.5" placeholder="67"></td>
+                    </tr>`).join('');
+        }
+
+        function fillAllYears(){
+            const y = document.getElementById('idYearAll').value.trim();
+            if (!/^\d{2}$/.test(y)) return toast('กรอกปี 2 หลัก เช่น 67', 'error');
+            document.querySelectorAll('#idSurveyBody .id-year').forEach(i => { i.value = y; });
+        }
+
+        async function applyPrefixIds(){
+            const items = [];
+            let bad = false;
+            document.querySelectorAll('#idSurveyBody .id-year').forEach(inp => {
+                const y = inp.value.trim();
+                if (!y) return;
+                if (!/^\d{2}$/.test(y)){ bad = true; return; }
+                const r = idSurveyRows[+inp.dataset.idx];
+                items.push({ subject: r.subject, room: r.room, year: y, five: r.five, name: r.subjectName || r.subject });
+            });
+            if (bad) return toast('ปีต้องเป็นตัวเลข 2 หลัก เช่น 67', 'error');
+            if (!items.length) return toast('ยังไม่ได้กรอกปีในแถวไหนเลย', 'error');
+            const total = items.reduce((a, x) => a + x.five, 0);
+            let ok = true;
+            try {
+                ok = window.confirm('เติมปีหน้ารหัสผู้เรียนรวม ' + total + ' คน\n\n' +
+                    items.slice(0, 8).map(x => '• ' + x.name + ' / ' + (x.room || 'ไม่ระบุห้อง') + ' → ปี ' + x.year + ' (เช่น 40001 → ' + x.year + '40001)').join('\n') +
+                    (items.length > 8 ? '\n… และอีก ' + (items.length - 8) + ' แถว' : '') + '\n\nยืนยันหรือไม่?');
+            } catch (e) { ok = true; }
+            if (!ok) return;
+            const res = await postAdmin('prefixIds', { items: items.map(x => ({ subject: x.subject, room: x.room, year: x.year })), subject: '' });
+            if (res && res.success){
+                toast(res.message || 'เติมปีแล้ว', 'success');
+                allStudentsData = []; dashboardLoaded = false; top10Loaded = false;
+                await loadIdSurvey();
+            }
         }
 
         /* ---- นำเข้ารายชื่อผู้เรียนจากไฟล์ Excel/CSV ---- */
