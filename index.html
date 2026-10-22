@@ -852,6 +852,12 @@
                     <p class="text-xs sm:text-sm text-slate-500 mb-4">1 รายวิชา = 1 ชีตในสเปรดชีต ผู้เรียนเลือกวิชาจากรายการด้านบนของหน้าเว็บ · ชื่อครู/เบอร์โทรของแต่ละวิชาใช้ในข้อความ LINE</p>
                     <div id="subjectList" class="space-y-3"></div>
 
+                    <div id="hiddenSubjectsWrap" class="hidden mt-5 pt-5 border-t border-slate-200">
+                        <div class="text-sm font-semibold text-slate-700 mb-1"><i class="fas fa-box-archive text-amber-500 mr-2"></i>วิชาที่ถูกเอาออกจากรายการ</div>
+                        <p class="text-xs text-slate-400 mb-3">ชีตเหล่านี้ยังอยู่ในสเปรดชีต ข้อมูลไม่หาย — กด "นำกลับ" เพื่อให้กลับมาอยู่ในรายการวิชา</p>
+                        <div id="hiddenSubjects" class="space-y-2"></div>
+                    </div>
+
                     <div class="mt-5 pt-5 border-t border-slate-200">
                         <div class="text-sm font-semibold text-slate-700 mb-3"><i class="fas fa-plus-circle text-emerald-500 mr-2"></i>เพิ่มรายวิชาใหม่</div>
                         <div class="grid sm:grid-cols-3 gap-3">
@@ -2035,6 +2041,7 @@
                 fillSettingsForm();
                 renderThemeUI();
                 subjectRoomsMap = null;
+                hiddenSheets = null;
                 renderSubjectList();
                 fillImportSubjects();
                 const _pc = document.getElementById('pwCur'); if (_pc) _pc.value = activePasscode;
@@ -2157,9 +2164,42 @@
             return [...row.querySelectorAll('.room-cb:checked')].map(x => x.value);
         }
 
+        let hiddenSheets = null;         // ชีตที่ถูกเอาออกจากรายการ (นำกลับได้) — โหลดเมื่อเปิดหน้าตั้งค่า
+        let hiddenSheetsLoading = false;
+
+        function renderHiddenSubjects(){
+            const box = document.getElementById('hiddenSubjects');
+            const wrap = document.getElementById('hiddenSubjectsWrap');
+            if (!box || !wrap) return;
+            const list = hiddenSheets || [];
+            wrap.classList.toggle('hidden', !list.length);
+            box.innerHTML = list.map((h, i) => `
+                <div class="flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50/60 px-3 py-2">
+                    <div class="min-w-0 text-sm"><span class="font-medium text-slate-700 truncate"><i class="fas fa-table mr-1 text-slate-400"></i>${escHtml(h.id)}</span>
+                        <span class="text-xs text-slate-400 ml-2">${h.rows} แถว</span></div>
+                    <button type="button" onclick="restoreSubjectUI(${i})" class="btn-secondary text-sm shrink-0"><i class="fas fa-rotate-left mr-1"></i>นำกลับ</button>
+                </div>`).join('');
+        }
+
+        async function restoreSubjectUI(i){
+            const h = (hiddenSheets || [])[i];
+            if (!h) return;
+            const res = await postAdmin('restoreSubject', { id: h.id, subject: '' });
+            if (res && res.success){ toast(res.message || 'นำรายวิชากลับแล้ว', 'success'); await refreshSubjectsAfterChange(); }
+        }
+
         function renderSubjectList(){
             const wrap = document.getElementById('subjectList');
             if (!wrap) return;
+            if (hiddenSheets === null && !hiddenSheetsLoading && isAdminUnlocked()){
+                hiddenSheetsLoading = true;
+                postAdmin('hiddenSheets', { subject: '' }).then(res => {
+                    hiddenSheetsLoading = false;
+                    hiddenSheets = (res && res.success && res.hidden) ? res.hidden : [];
+                    renderHiddenSubjects();
+                });
+            }
+            renderHiddenSubjects();
             const real = subjects.filter(s => s.id !== '');   // วิชาสำรอง (id ว่าง) ไม่ใช่รายวิชาจริง
             if (!real.length){
                 wrap.innerHTML = '<p class="text-sm text-slate-500 bg-slate-50 rounded-xl px-4 py-3">ยังไม่มีรายวิชาในรายการ — ตอนนี้ใช้วิชาสำรองจากโค้ดฝั่งเซิร์ฟเวอร์ · เพิ่มรายวิชาด้านล่างได้เลย (ถ้าเซิร์ฟเวอร์ยังเป็นเวอร์ชันเก่า ต้องอัปเดต Apps Script ก่อน)</p>';
@@ -2196,6 +2236,7 @@
             await subjectsReady;
             allStudentsData = []; dashboardLoaded = false; top10Loaded = false;
             subjectRoomsMap = null;
+            hiddenSheets = null;
             renderSubjectList();
         }
 
@@ -2236,7 +2277,7 @@
             try { ok = window.confirm('เอารายวิชา "' + s.name + '" ออกจากรายการ?\n(ข้อมูลในชีตยังอยู่ ไม่ถูกลบ)'); } catch (e) { ok = true; }
             if (!ok) return;
             const res = await postAdmin('deleteSubject', { id: s.id, subject: '' });
-            if (res && res.success){ toast('เอารายวิชาออกจากรายการแล้ว', 'success'); await refreshSubjectsAfterChange(); }
+            if (res && res.success){ toast('เอารายวิชาออกจากรายการแล้ว — กู้คืนได้ที่ "วิชาที่ถูกเอาออกจากรายการ"', 'success'); await refreshSubjectsAfterChange(); }
         }
 
         /* ---- นำเข้ารายชื่อผู้เรียนจากไฟล์ Excel/CSV ---- */
