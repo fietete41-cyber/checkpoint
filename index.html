@@ -441,13 +441,13 @@
                             <i class="fas fa-magnifying-glass"></i>
                         </div>
                         <h2 class="text-2xl font-bold text-slate-800 mb-2">ค้นหาคะแนนผู้เรียน</h2>
-                        <p class="text-slate-500">กรอกเลขประจำตัวผู้เรียน</p>
+                        <p class="text-slate-500">กรอกเลขประจำตัวผู้เรียน (ปีที่เข้าศึกษา 2 หลัก + เลข 5 หลัก)</p>
                     </div>
 
                     <div class="space-y-5">
                         <div>
                             <label class="label">เลขประจำตัวผู้เรียน</label>
-                            <input type="text" id="studentId" inputmode="numeric" placeholder="เช่น 67201040001"
+                            <input type="text" id="studentId" inputmode="numeric" placeholder="เช่น 6740001"
                                    class="input-field text-center text-base sm:text-lg tracking-wider sm:tracking-widest">
                         </div>
                         <div id="searchLockNote" class="hidden rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-sm px-4 py-3 text-center"></div>
@@ -722,7 +722,7 @@
                     </div>
                     <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
                         <div><label class="label">เลขที่</label><input type="number" id="addNo" class="input-field" placeholder="อัตโนมัติ"></div>
-                        <div><label class="label">เลขประจำตัว</label><input type="text" id="addId" class="input-field" placeholder="40001"></div>
+                        <div><label class="label">เลขประจำตัว</label><input type="text" id="addId" class="input-field" placeholder="6740001"></div>
                         <div><label class="label">ชื่อ-นามสกุล</label><input type="text" id="addName" class="input-field" placeholder="นาย..."></div>
                         <div><label class="label">ห้อง</label><input type="text" id="addRoom" class="input-field" placeholder="ปวช.2/1"></div>
                     </div>
@@ -894,6 +894,10 @@
                             <div><label class="label">คอลัมน์ห้อง</label><select id="impColRoom" class="input-field" onchange="renderImportPreview()"></select></div>
                             <div><label class="label">ตั้งชื่อห้องเอง (ไม่บังคับ)</label><input type="text" id="impRoomFixed" class="input-field" placeholder="เช่น ปวช.2/1" oninput="renderImportPreview()"></div>
                         </div>
+                        <label class="flex items-start gap-2 mt-4 text-sm text-slate-600 cursor-pointer">
+                            <input type="checkbox" id="impShortId" checked onchange="renderImportPreview()" class="w-4 h-4 mt-0.5 accent-violet-600">
+                            <span>แปลงเลขประจำตัว 11 หลักเป็นรหัส 7 หลัก (ปีที่เข้าศึกษา 2 หลัก + 5 หลักท้าย) เช่น 67201040001 → <b>6740001</b> — ผู้เรียนจะกรอกรหัสนี้เพื่อเช็คคะแนน</span>
+                        </label>
                         <div id="importSummary" class="text-sm text-slate-600 mt-4"></div>
                         <div class="table-responsive mt-2"><table class="w-full text-sm"><tbody id="importPreviewBody"></tbody></table></div>
                         <button id="importBtn" onclick="runImport()" class="btn-primary mt-4"><i class="fas fa-file-import mr-2"></i>นำเข้ารายชื่อ</button>
@@ -1569,8 +1573,15 @@
         /* ==================== ค้นหาผู้เรียน ==================== */
         document.getElementById('studentId').addEventListener('keypress', e => { if (e.key === 'Enter') searchStudent(); });
 
+        /* รหัสผู้เรียนในระบบ = ปีที่เข้าศึกษา 2 หลัก + เลข 5 หลักท้าย (เช่น 6740001)
+           ถ้าได้เลขประจำตัวเต็ม 11 หลัก (เช่น 67201040001) จะแปลงเป็นรหัส 7 หลักให้ */
+        function shortStudentId(id){
+            id = String(id || '').trim();
+            return /^\d{11}$/.test(id) ? id.slice(0, 2) + id.slice(-5) : id;
+        }
+
         async function searchStudent(){
-            const id = document.getElementById('studentId').value.trim();
+            const id = shortStudentId(document.getElementById('studentId').value.trim());
             if (!id) return toast('กรุณากรอกเลขประจำตัวผู้เรียน', 'error');
             showLoading('search');
             try{
@@ -2421,10 +2432,12 @@
             const cn = +document.getElementById('impColName').value;
             const cr = +document.getElementById('impColRoom').value;
             const fixedRoom = document.getElementById('impRoomFixed').value.trim();
+            const shorten = document.getElementById('impShortId').checked;
             const seen = new Set(); let dupes = 0;
             importStudents = [];
             importTable.rows.forEach(r => {
-                const id = String(r[ci] || '').trim().replace(/\.0+$/, '');
+                let id = String(r[ci] || '').trim().replace(/\.0+$/, '');
+                if (shorten) id = shortStudentId(id);
                 const name = String(r[cn] || '').trim();
                 if (!id || !name) return;
                 if (seen.has(id)){ dupes++; return; }
@@ -2653,7 +2666,7 @@
         async function addStudent(){
             const student = {
                 no: document.getElementById('addNo').value.trim(),
-                studentId: document.getElementById('addId').value.trim(),
+                studentId: shortStudentId(document.getElementById('addId').value),
                 name: document.getElementById('addName').value.trim(),
                 room: document.getElementById('addRoom').value.trim()
             };
