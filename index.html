@@ -2131,6 +2131,7 @@
         /* ---- จัดการรายวิชา (หน้าตั้งค่าระบบ) ---- */
         let subjectRoomsMap = null;      // { <id วิชา>: [ห้องที่มีในชีต] } — โหลดเมื่อเปิดหน้าตั้งค่า
         let subjectRoomsLoading = false;
+        let subjectRoomsCount = {};      // { <id วิชา>: { <ห้อง>: จำนวนผู้เรียน } }
 
         // ช่องเลือกห้องที่เปิดให้ผู้เรียนดูคะแนน (ห้องที่ไม่ติ๊ก = ล็อก)
         function roomAccessHtml(s){
@@ -2140,7 +2141,8 @@
             const known = (subjectRoomsMap && subjectRoomsMap[s.id]) || [];
             const rooms = [...known, ...open.filter(r => !known.includes(r))];
             const chip = (inner, on) => `<label class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm cursor-pointer select-none ${on ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'bg-white border-slate-200 text-slate-600'}">${inner}</label>`;
-            const roomChips = rooms.map(r => chip(`<input type="checkbox" class="room-cb w-4 h-4 accent-emerald-600" value="${escHtml(r)}" ${all || open.includes(r) ? 'checked' : ''} ${all ? 'disabled' : ''}>🏫 ${escHtml(r)}`, all || open.includes(r))).join('');
+            const delBtn = r => `<button type="button" onclick="deleteRoomUI(this)" data-sid="${escHtml(s.id)}" data-room="${escHtml(r)}" title="ลบห้อง ${escHtml(r)} ออกจากวิชานี้" aria-label="ลบห้อง ${escHtml(r)}" class="ml-1 -mr-1 w-5 h-5 inline-flex items-center justify-center rounded-full text-slate-400 hover:text-white hover:bg-red-500 transition"><i class="fas fa-xmark text-[10px]"></i></button>`;
+            const roomChips = rooms.map(r => chip(`<input type="checkbox" class="room-cb w-4 h-4 accent-emerald-600" value="${escHtml(r)}" ${all || open.includes(r) ? 'checked' : ''} ${all ? 'disabled' : ''}>🏫 ${escHtml(r)}${delBtn(r)}`, all || open.includes(r))).join('');
             return `
                 <div class="mt-3 pt-3 border-t border-dashed border-slate-200">
                     <div class="text-xs font-semibold text-slate-600 mb-2"><i class="fas fa-lock mr-1 text-amber-500"></i>ห้องที่เปิดให้ผู้เรียนดูคะแนนวิชานี้
@@ -2150,6 +2152,26 @@
                         ${roomChips || (subjectRoomsMap ? '<span class="text-xs text-slate-400 py-1.5">ยังไม่มีผู้เรียนในวิชานี้</span>' : '<span class="text-xs text-slate-400 py-1.5">กำลังโหลดรายชื่อห้อง...</span>')}
                     </div>
                 </div>`;
+        }
+
+        async function deleteRoomUI(btn){
+            const sid = btn.dataset.sid, room = btn.dataset.room;
+            const sub = subjects.find(x => x.id === sid) || {};
+            const n = subjectRoomsCount && subjectRoomsCount[sid] ? (subjectRoomsCount[sid][room] || 0) : 0;
+            let ok = true;
+            try {
+                ok = window.confirm('ลบห้อง "' + room + '" ออกจากวิชา "' + (sub.name || sid) + '" ?\n\n' +
+                    (n ? '⚠️ ผู้เรียน ' + n + ' คนในห้องนี้จะถูกลบออกจากวิชานี้ (รวมคะแนนของพวกเขา)\n' : '') +
+                    'วิชาอื่นไม่ถูกกระทบ · ระบบเก็บสำเนาไว้ในชีต "Trash" ของสเปรดชีตเผื่อกู้คืน');
+            } catch (e) { ok = true; }
+            if (!ok) return;
+            const res = await postAdmin('deleteRoom', { subject: sid, room });
+            if (res && res.success){
+                toast(res.message || 'ลบห้องแล้ว', 'success');
+                allStudentsData = []; dashboardLoaded = false; top10Loaded = false;
+                subjectRoomsMap = null;
+                renderSubjectList();
+            }
         }
 
         function toggleAllRooms(cb){
@@ -2210,6 +2232,7 @@
                 postAdmin('subjectRooms', { subject: '' }).then(res => {
                     subjectRoomsLoading = false;
                     subjectRoomsMap = (res && res.success && res.rooms) ? res.rooms : {};
+                    subjectRoomsCount = (res && res.counts) || {};
                     renderSubjectList();
                 });
             }
