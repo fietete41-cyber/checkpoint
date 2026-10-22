@@ -441,13 +441,13 @@
                             <i class="fas fa-magnifying-glass"></i>
                         </div>
                         <h2 class="text-2xl font-bold text-slate-800 mb-2">ค้นหาคะแนนผู้เรียน</h2>
-                        <p class="text-slate-500">กรอกเลขประจำตัวผู้เรียน 5 หลัก</p>
+                        <p class="text-slate-500">กรอกเลขประจำตัวผู้เรียน</p>
                     </div>
 
                     <div class="space-y-5">
                         <div>
                             <label class="label">เลขประจำตัวผู้เรียน</label>
-                            <input type="text" id="studentId" inputmode="numeric" placeholder="เช่น 40001, 40002, 40003"
+                            <input type="text" id="studentId" inputmode="numeric" placeholder="เช่น 67201040001"
                                    class="input-field text-center text-base sm:text-lg tracking-wider sm:tracking-widest">
                         </div>
                         <div id="searchLockNote" class="hidden rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-sm px-4 py-3 text-center"></div>
@@ -870,7 +870,7 @@
                         <span class="w-9 h-9 flex items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 text-white shrink-0"><i class="fas fa-file-import"></i></span>
                         <h3 class="text-base sm:text-lg font-bold text-slate-800">นำเข้ารายชื่อผู้เรียนจากไฟล์</h3>
                     </div>
-                    <p class="text-xs sm:text-sm text-slate-500 mb-4">รองรับไฟล์ Excel (.xlsx / .xls) และ CSV · ควรมีหัวตารางเช่น เลขประจำตัว, ชื่อ-นามสกุล, ห้อง (ระบบเดาคอลัมน์ให้ และแก้ได้ก่อนนำเข้า) · เลขประจำตัวที่มีอยู่แล้วจะถูกข้าม</p>
+                    <p class="text-xs sm:text-sm text-slate-500 mb-4">รองรับไฟล์ <b>PDF ใบรายชื่อนักศึกษา</b> (เลือกหลายไฟล์พร้อมกันได้ เช่น หลายกลุ่มเรียน), Excel (.xlsx / .xls) และ CSV · ถ้าเป็น Excel/CSV ควรมีหัวตารางเช่น เลขประจำตัว, ชื่อ-นามสกุล, ห้อง (ระบบเดาคอลัมน์ให้ และแก้ได้ก่อนนำเข้า) · เลขประจำตัวที่มีอยู่แล้วจะถูกข้าม</p>
 
                     <div class="grid sm:grid-cols-2 gap-3">
                         <div>
@@ -881,16 +881,18 @@
                             <label class="label">ไฟล์รายชื่อ</label>
                             <label class="btn-secondary cursor-pointer inline-flex text-sm w-full justify-center">
                                 <i class="fas fa-file-excel mr-2"></i><span id="importFileLabel">เลือกไฟล์จากเครื่อง</span>
-                                <input type="file" id="importFile" accept=".xlsx,.xls,.csv,text/csv" onchange="handleImportFile(this)" class="hidden">
+                                <input type="file" id="importFile" accept=".xlsx,.xls,.csv,.pdf,text/csv,application/pdf" multiple onchange="handleImportFile(this)" class="hidden">
                             </label>
                         </div>
                     </div>
 
                     <div id="importPreview" class="hidden mt-5">
-                        <div class="grid sm:grid-cols-3 gap-3">
+                        <div id="importMetaNote" class="hidden text-sm text-slate-600 bg-slate-50 rounded-xl px-4 py-3 mb-4"></div>
+                        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
                             <div><label class="label">คอลัมน์เลขประจำตัว</label><select id="impColId" class="input-field" onchange="renderImportPreview()"></select></div>
                             <div><label class="label">คอลัมน์ชื่อ-นามสกุล</label><select id="impColName" class="input-field" onchange="renderImportPreview()"></select></div>
                             <div><label class="label">คอลัมน์ห้อง</label><select id="impColRoom" class="input-field" onchange="renderImportPreview()"></select></div>
+                            <div><label class="label">ตั้งชื่อห้องเอง (ไม่บังคับ)</label><input type="text" id="impRoomFixed" class="input-field" placeholder="เช่น ปวช.2/1" oninput="renderImportPreview()"></div>
                         </div>
                         <div id="importSummary" class="text-sm text-slate-600 mt-4"></div>
                         <div class="table-responsive mt-2"><table class="w-full text-sm"><tbody id="importPreviewBody"></tbody></table></div>
@@ -2238,23 +2240,112 @@
             sel.value = subjects.some(s => s.id === keep) && keep !== '' ? keep : currentSubject;
         }
 
-        function loadXlsxLib(){
-            if (window.XLSX) return Promise.resolve();
+        function loadScript(src){
             return new Promise((resolve, reject) => {
                 const s = document.createElement('script');
-                s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+                s.src = src;
                 s.onload = resolve;
                 s.onerror = () => reject(new Error('โหลดตัวอ่านไฟล์ไม่ได้ (ต้องเชื่อมต่ออินเทอร์เน็ต)'));
                 document.head.appendChild(s);
             });
         }
+        function loadXlsxLib(){
+            return window.XLSX ? Promise.resolve() : loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
+        }
+        async function loadPdfLib(){
+            if (window.pdfjsLib) return;
+            const base = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+            await loadScript(base + 'pdf.min.js');
+            const code = await (await fetch(base + 'pdf.worker.min.js')).text();   // ผ่าน blob เพื่อเลี่ยงข้อจำกัด worker ข้ามโดเมน
+            pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(new Blob([code], { type: 'text/javascript' }));
+        }
+
+        // PDF จากระบบทะเบียนใช้ตัวอักษรไทยแบบ Private Use (วรรณยุกต์/การันต์ยกต่ำ) ที่อ่านออกมาเป็นอักขระแปลก -> แปลงกลับเป็นมาตรฐาน
+        const THAI_PUA = { '':'่','':'้','':'๊','':'๋','':'์',
+            '':'ั','':'ํ','':'็','':'่','':'้','':'๊',
+            '':'๋','':'์','':'ุ','':'ู','':'ฺ' };
+        function fixThai(s){
+            return String(s || '').replace(/[-]/g, c => THAI_PUA[c] || '').replace(/ํา/g, 'ำ');
+        }
+
+        /* อ่านใบรายชื่อนักศึกษาแบบ PDF (ตารางมี ลำดับ · รหัสประจำตัว · ชื่อ · นามสกุล) + ข้อมูลหัวกระดาษ (วิชา/กลุ่มเรียน/ครู) */
+        async function parsePdfRoster(file){
+            await loadPdfLib();
+            const doc = await pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+            const rows = [];
+            const meta = { subjectCode: '', subjectName: '', group: '', teacher: '' };
+            for (let p = 1; p <= doc.numPages; p++){
+                const tc = await (await doc.getPage(p)).getTextContent();
+                const items = tc.items.map(i => ({ s: fixThai(i.str).trim(), x: i.transform[4], y: i.transform[5] })).filter(i => i.s);
+
+                // ข้อมูลหัวกระดาษ: หาค่าที่อยู่ใกล้ป้ายชื่อ (ค่าจะพิมพ์ทับเส้นจุด)
+                const near = (label, re) => {
+                    const l = items.find(i => i.s.includes(label));
+                    if (!l) return '';
+                    const c = items.filter(i => i !== l && Math.abs(i.y - l.y) <= 8 && i.x >= l.x && !i.s.includes('....') && re.test(i.s)).sort((a, b) => a.x - b.x)[0];
+                    return c ? c.s : '';
+                };
+                if (!meta.group) meta.group = near('กลุ่มเรียน', /^[A-Za-z0-9\-\/]{4,}$/);
+                if (!meta.subjectCode) meta.subjectCode = near('รหัสวิชา', /^[A-Za-z0-9\-]{4,}$/);
+                if (!meta.subjectName) meta.subjectName = near('ชื่อวิชา', /\S/);
+                if (!meta.teacher) meta.teacher = near('ชื่อครูผู้สอน', /\S/);
+
+                // จัดกลุ่มข้อความเป็นบรรทัดตามแกน y
+                const lines = [];
+                items.sort((a, b) => b.y - a.y || a.x - b.x).forEach(it => {
+                    const L = lines[lines.length - 1];
+                    if (L && Math.abs(L.y - it.y) <= 3) L.cells.push(it); else lines.push({ y: it.y, cells: [it] });
+                });
+                lines.forEach(L => {
+                    const cells = L.cells.sort((a, b) => a.x - b.x);
+                    const idIdx = cells.findIndex(c => /^\d{5,}$/.test(c.s));
+                    if (idIdx < 1) return;                                   // ต้องมีเลขลำดับอยู่หน้ารหัสประจำตัว
+                    const noCell = cells.slice(0, idIdx).find(c => /^\d{1,4}$/.test(c.s));
+                    const rest = cells.slice(idIdx + 1).map(c => c.s);
+                    if (!noCell || !rest.length) return;
+                    rows.push([noCell.s, cells[idIdx].s, rest.join(' '), meta.group]);
+                });
+            }
+            return { rows, meta, name: file.name };
+        }
 
         function colLetter(i){ let s = ''; i++; while (i > 0){ const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; }
 
         async function handleImportFile(input){
-            const f = input.files && input.files[0];
-            if (!f) return;
-            document.getElementById('importFileLabel').textContent = f.name;
+            const files = [...(input.files || [])];
+            if (!files.length) return;
+            const isPdf = f => /\.pdf$/i.test(f.name) || f.type === 'application/pdf';
+            document.getElementById('importFileLabel').textContent = files.length > 1 ? files.length + ' ไฟล์' : files[0].name;
+            document.getElementById('impRoomFixed').value = '';
+            const note = document.getElementById('importMetaNote');
+            note.classList.add('hidden');
+            if (files.some(isPdf)){
+                try{
+                    if (!files.every(isPdf)) throw new Error('เลือกหลายไฟล์ได้เฉพาะ PDF ด้วยกัน (หรือเลือก Excel/CSV ไฟล์เดียว)');
+                    toast('กำลังอ่านไฟล์ PDF...', 'info');
+                    const parsed = [];
+                    for (const f of files) parsed.push(await parsePdfRoster(f));
+                    const rows = parsed.flatMap(p => p.rows);
+                    if (!rows.length) throw new Error('ไม่พบตารางรายชื่อใน PDF (ถ้าเป็นรูปสแกน ต้องแปลงเป็น Excel ก่อน)');
+                    buildImportTable([['ลำดับ', 'รหัสประจำตัว', 'ชื่อ-นามสกุล', 'กลุ่มเรียน'], ...rows]);
+                    const m = parsed[0].meta;
+                    note.innerHTML = '<i class="fas fa-file-pdf mr-2 text-rose-500"></i>อ่านจาก PDF ' + parsed.length + ' ไฟล์' +
+                        (m.subjectName ? ' · วิชา <b>' + escHtml(m.subjectName) + '</b>' + (m.subjectCode ? ' (' + escHtml(m.subjectCode) + ')' : '') : '') +
+                        (m.teacher ? ' · ครู ' + escHtml(m.teacher) : '') +
+                        '<br>' + parsed.map(p => escHtml(p.meta.group || p.name) + ' = ' + p.rows.length + ' คน').join(' · ') +
+                        '<br><span class="text-xs">คอลัมน์ "ห้อง" ใช้เลขกลุ่มเรียนจากไฟล์ — จะตั้งชื่อห้องเองก็ได้ในช่อง "ตั้งชื่อห้องเอง" ด้านล่าง</span>';
+                    note.classList.remove('hidden');
+                }catch(err){
+                    console.error(err);
+                    importTable = null;
+                    document.getElementById('importPreview').classList.add('hidden');
+                    toast('อ่านไฟล์ไม่สำเร็จ: ' + err.message, 'error');
+                }
+                input.value = '';
+                return;
+            }
+            if (files.length > 1){ toast('เลือกหลายไฟล์ได้เฉพาะ PDF — Excel/CSV เลือกทีละไฟล์', 'error'); input.value = ''; return; }
+            const f = files[0];
             try{
                 await loadXlsxLib();
                 const buf = await f.arrayBuffer();
@@ -2335,6 +2426,7 @@
             const ci = +document.getElementById('impColId').value;
             const cn = +document.getElementById('impColName').value;
             const cr = +document.getElementById('impColRoom').value;
+            const fixedRoom = document.getElementById('impRoomFixed').value.trim();
             const seen = new Set(); let dupes = 0;
             importStudents = [];
             importTable.rows.forEach(r => {
@@ -2343,7 +2435,7 @@
                 if (!id || !name) return;
                 if (seen.has(id)){ dupes++; return; }
                 seen.add(id);
-                importStudents.push({ studentId: id, name, room: cr >= 0 ? String(r[cr] || '').trim() : '' });
+                importStudents.push({ studentId: id, name, room: fixedRoom || (cr >= 0 ? String(r[cr] || '').trim() : '') });
             });
             const rooms = [...new Set(importStudents.map(s => s.room).filter(Boolean))];
             document.getElementById('importSummary').innerHTML =
