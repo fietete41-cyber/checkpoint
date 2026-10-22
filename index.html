@@ -231,8 +231,21 @@
         }
         .mobile-appbar img{ width:1.9rem; height:1.9rem; border-radius:9999px; object-fit:cover; background:rgba(255,255,255,.15); flex-shrink:0; }
 
-        /* เมนูของครู (คะแนนเก็บ/ตั้งค่า) — ซ่อนจากผู้เรียน จนกว่าจะเข้าสู่ระบบครู */
-        html:not(.admin-on) .admin-only{ display:none !important; }
+        /* โหมดผู้ดูแล: ปกติเห็นเฉพาะเมนูผู้เรียน — เปิดสวิตซ์ (ใส่รหัส) แล้วเหลือเฉพาะเมนูครู (คะแนนเก็บ/ตั้งค่า) */
+        html:not(.mode-admin) .admin-only{ display:none !important; }
+        html.mode-admin .student-only{ display:none !important; }
+
+        .admin-switch{
+            display:inline-flex; align-items:center; gap:.45rem; flex-shrink:0;
+            padding:.3rem .45rem .3rem .7rem; border-radius:9999px; cursor:pointer;
+            font-size:.75rem; font-weight:600; color:inherit; line-height:1;
+            background:rgba(127,127,127,.14); border:1px solid rgba(127,127,127,.32); transition:background .2s;
+        }
+        .admin-switch:hover{ background:rgba(127,127,127,.24); }
+        .admin-switch .as-track{ position:relative; width:2rem; height:1.1rem; border-radius:9999px; background:rgba(127,127,127,.45); transition:background .2s; }
+        .admin-switch .as-knob{ position:absolute; top:.1rem; left:.1rem; width:.9rem; height:.9rem; border-radius:9999px; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.35); transition:transform .2s; }
+        html.mode-admin .admin-switch .as-track{ background:#22c55e; }
+        html.mode-admin .admin-switch .as-knob{ transform:translateX(.9rem); }
 
         /* แถบเมนูล่างแบบแอป */
         .bottom-nav{
@@ -402,17 +415,23 @@
     <div class="mobile-appbar md:hidden">
         <img id="mobileAppbarLogo" src="https://i.postimg.cc/3xWMgCbt/Neutral-Modern-Illustrated-Community-Sports-Carnival-Flyer-7-x-10-6-6-x-9-9-6-x-9.png" alt="โลโก้">
         <span id="mobileAppbarTitle" class="font-semibold text-sm truncate">ค้นหาคะแนน</span>
+        <button type="button" class="admin-switch ml-auto" onclick="toggleAdminMode()" role="switch" aria-checked="false" title="โหมดผู้ดูแล (ครู)">
+            <i class="fas fa-lock as-ico"></i><span class="as-label">ผู้ดูแล</span><span class="as-track"><span class="as-knob"></span></span>
+        </button>
     </div>
 
     <div class="particles" id="particles"></div>
 
     <!-- เมนูบน (เดสก์ท็อป) -->
     <nav class="glass-nav shadow-lg sticky top-0 z-50 hidden md:block">
-        <div class="container mx-auto px-2 sm:px-4">
-            <div class="flex flex-nowrap sm:flex-wrap justify-start sm:justify-center gap-2 sm:gap-3 py-3 overflow-x-auto no-scrollbar">
-                <button data-view="search" onclick="showView('search')" class="nav-pill shrink-0"><i class="fas fa-magnifying-glass sparkle"></i><span class="whitespace-nowrap">ค้นหาคะแนน</span></button>
-                <button data-view="dashboard" onclick="showView('dashboard')" class="nav-pill shrink-0"><i class="fas fa-chart-column sparkle"></i><span class="whitespace-nowrap">แดชบอร์ด</span></button>
-                <button data-view="top10" onclick="showView('top10')" class="nav-pill shrink-0"><i class="fas fa-trophy sparkle"></i><span class="whitespace-nowrap">Top 10</span></button>
+        <div class="container mx-auto px-2 sm:px-4 relative">
+            <button type="button" class="admin-switch absolute right-3 top-1/2 -translate-y-1/2 z-10" style="color:var(--accent-dark)" onclick="toggleAdminMode()" role="switch" aria-checked="false" title="โหมดผู้ดูแล (ครู)">
+                <i class="fas fa-lock as-ico"></i><span class="as-label">ผู้ดูแล</span><span class="as-track"><span class="as-knob"></span></span>
+            </button>
+            <div class="flex flex-nowrap sm:flex-wrap justify-start sm:justify-center gap-2 sm:gap-3 py-3 px-28 overflow-x-auto no-scrollbar">
+                <button data-view="search" onclick="showView('search')" class="nav-pill shrink-0 student-only"><i class="fas fa-magnifying-glass sparkle"></i><span class="whitespace-nowrap">ค้นหาคะแนน</span></button>
+                <button data-view="dashboard" onclick="showView('dashboard')" class="nav-pill shrink-0 student-only"><i class="fas fa-chart-column sparkle"></i><span class="whitespace-nowrap">แดชบอร์ด</span></button>
+                <button data-view="top10" onclick="showView('top10')" class="nav-pill shrink-0 student-only"><i class="fas fa-trophy sparkle"></i><span class="whitespace-nowrap">Top 10</span></button>
                 <button data-view="scores" onclick="showView('scores')" class="nav-pill shrink-0 admin-only"><i class="fas fa-table-list sparkle"></i><span class="whitespace-nowrap">คะแนนเก็บ</span></button>
                 <button data-view="notify" onclick="showView('notify')" class="nav-pill shrink-0 admin-only"><i class="fas fa-gear sparkle"></i><span class="whitespace-nowrap">ตั้งค่าระบบ</span></button>
             </div>
@@ -1063,15 +1082,41 @@
             <div><i class="fas fa-code text-sky-400 mr-2"></i><span class="text-base sm:text-lg font-medium">พัฒนาโดย ครูเต้ย :: รังสรรค์ ลอยแก้ว</span></div>
             <div class="text-sm sm:text-base"><i class="fas fa-envelope text-sky-400 mr-2"></i><span>fietete41@gmail.com</span></div>
             <div class="text-xs sm:text-sm text-slate-400">© 2025 ระบบตรวจสอบคะแนนผู้เรียน</div>
-            <div class="admin-only-hint pt-1"><a href="#notify" onclick="showView('notify'); return false;" class="text-[11px] text-slate-600 hover:text-slate-300 transition"><i class="fas fa-lock mr-1"></i>สำหรับครู</a></div>
         </div>
     </footer>
 
+    <!-- หน้าต่างใส่รหัส เข้าโหมดผู้ดูแล -->
+    <div id="adminModal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-slate-900/55 backdrop-blur-sm px-4" onclick="if(event.target===this) closeAdminModal()">
+        <div class="frost-card rounded-3xl overflow-hidden w-full max-w-sm" role="dialog" aria-modal="true" aria-labelledby="adminModalTitle">
+            <div class="bg-gradient-to-br from-sky-500 to-cyan-600 px-6 py-6 text-center text-white">
+                <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-white/20 backdrop-blur mb-2"><i class="fas fa-user-lock text-2xl"></i></div>
+                <h3 id="adminModalTitle" class="text-lg font-bold">เข้าสู่โหมดผู้ดูแล</h3>
+                <p class="text-xs text-white/80 mt-1">สำหรับครูผู้สอน · คะแนนเก็บ และ ตั้งค่าระบบ</p>
+            </div>
+            <div class="p-6">
+                <label class="label" for="adminModalPass">รหัสผ่าน</label>
+                <div class="relative">
+                    <input type="password" id="adminModalPass" placeholder="••••••••" class="input-field pr-11" autocomplete="current-password"
+                           onkeydown="if(event.key==='Enter'){ event.preventDefault(); submitAdminModal(); }">
+                    <button type="button" onclick="togglePass('adminModalPass','adminModalEye')" aria-label="แสดง/ซ่อนรหัสผ่าน" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"><i id="adminModalEye" class="fas fa-eye"></i></button>
+                </div>
+                <label class="flex items-center gap-2 mt-3 text-sm text-slate-600 cursor-pointer">
+                    <input type="checkbox" id="adminModalRemember" class="w-4 h-4 accent-sky-600">จดจำในเครื่องนี้ (ไม่ต้องใส่รหัสซ้ำ)
+                </label>
+                <p id="adminModalError" class="text-red-500 text-sm mt-3 text-center hidden"></p>
+                <div class="flex gap-2 mt-4">
+                    <button type="button" onclick="closeAdminModal()" class="btn-secondary flex-1">ยกเลิก</button>
+                    <button type="button" onclick="submitAdminModal()" class="btn-primary flex-1"><i class="fas fa-unlock mr-2"></i>เข้าสู่โหมด</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- เมนูล่างแบบแอป (มือถือเท่านั้น) -->
     <nav class="bottom-nav md:hidden">
-        <button data-view="search" onclick="showView('search')"><i class="fas fa-magnifying-glass"></i><span>ค้นหา</span></button>
-        <button data-view="dashboard" onclick="showView('dashboard')"><i class="fas fa-chart-column"></i><span>แดชบอร์ด</span></button>
-        <button data-view="top10" onclick="showView('top10')"><i class="fas fa-trophy"></i><span>Top 10</span></button>
+        <button data-view="search" onclick="showView('search')" class="student-only"><i class="fas fa-magnifying-glass"></i><span>ค้นหา</span></button>
+        <button data-view="dashboard" onclick="showView('dashboard')" class="student-only"><i class="fas fa-chart-column"></i><span>แดชบอร์ด</span></button>
+        <button data-view="top10" onclick="showView('top10')" class="student-only"><i class="fas fa-trophy"></i><span>Top 10</span></button>
         <button data-view="scores" onclick="showView('scores')" class="admin-only"><i class="fas fa-table-list"></i><span>คะแนนเก็บ</span></button>
         <button data-view="notify" onclick="showView('notify')" class="admin-only"><i class="fas fa-gear"></i><span>ตั้งค่า</span></button>
     </nav>
@@ -1348,6 +1393,7 @@
         let dashboardLoaded = false;
         let top10Loaded = false;
         const VIEWS = ['search', 'dashboard', 'top10', 'scores', 'notify'];
+        const ADMIN_VIEWS = ['scores', 'notify'];
         const VIEW_LABELS = {
             search: 'ค้นหาคะแนน', dashboard: 'แดชบอร์ด', top10: 'Top 10 · ทำเนียบคนเก่ง',
             scores: 'คะแนนเก็บ', notify: 'ตั้งค่าระบบ'
@@ -1359,6 +1405,12 @@
         /* สลับหน้าแบบ "หน้าใครหน้ามัน" — แสดงทีละหน้าจากแถบเมนู */
         function showView(name){
             if (!VIEWS.includes(name)) name = 'search';
+            if (ADMIN_VIEWS.includes(name) && !adminMode){      // ลิงก์ตรง #scores / #notify -> ขอรหัสก่อน
+                requestAdminMode(name);
+                if (!adminMode) name = 'search';
+                else return;
+            }
+            if (adminMode && !ADMIN_VIEWS.includes(name)) name = 'scores';   // โหมดผู้ดูแลมีแค่ คะแนนเก็บ/ตั้งค่า
             currentView = name;
             const sBar = document.getElementById('subjectBar');
             if (sBar) sBar.classList.toggle('hidden', name === 'notify');
@@ -1996,10 +2048,77 @@
             try { return localStorage.getItem(ADMIN_KEY) === '1'; } catch (e) { return false; }
         }
 
-        // แสดงเมนู "คะแนนเก็บ/ตั้งค่า" เฉพาะเมื่อครูเข้าสู่ระบบแล้ว (ผู้เรียนเห็นแค่ ค้นหา/แดชบอร์ด/Top 10)
+        /* ===== โหมดผู้ดูแล =====
+           เริ่มต้นทุกครั้งเป็นโหมดผู้เรียน (ค้นหา/แดชบอร์ด/Top 10) — สวิตซ์มุมขวาบน + รหัสผ่านเพื่อเข้าโหมดผู้ดูแล
+           ซึ่งมีเฉพาะ คะแนนเก็บ และ ตั้งค่าระบบ */
+        let adminMode = false;
+        let pendingAdminView = null;
+
         function updateAdminNav(){
-            document.documentElement.classList.toggle('admin-on', isAdminUnlocked());
+            document.documentElement.classList.toggle('mode-admin', adminMode);
+            document.querySelectorAll('.admin-switch').forEach(b => b.setAttribute('aria-checked', adminMode ? 'true' : 'false'));
+            document.querySelectorAll('.admin-switch .as-ico').forEach(i => { i.className = 'fas as-ico ' + (adminMode ? 'fa-lock-open' : 'fa-lock'); });
         }
+
+        function toggleAdminMode(){
+            if (adminMode) exitAdminMode(); else requestAdminMode('scores');
+        }
+
+        function requestAdminMode(view){
+            pendingAdminView = ADMIN_VIEWS.includes(view) ? view : 'scores';
+            if (isAdminUnlocked()){ enterAdminMode(); return; }      // จดจำรหัสไว้ในเครื่องนี้แล้ว
+            openAdminModal();
+        }
+
+        function enterAdminMode(){
+            adminMode = true;
+            updateAdminNav();
+            const v = pendingAdminView || 'scores';
+            pendingAdminView = null;
+            showView(v);
+        }
+
+        function exitAdminMode(){
+            if (scoreDirty){
+                let ok = true;
+                try { ok = window.confirm('มีการแก้ไขคะแนนที่ยังไม่บันทึก ต้องการออกจากโหมดผู้ดูแล (ทิ้งการแก้ไข) หรือไม่?'); } catch (e) { ok = true; }
+                if (!ok) return;
+                scoreEdits = {}; markScoreDirty(false);
+            }
+            adminMode = false;
+            adminSession = false;            // ครั้งหน้าต้องใส่รหัสใหม่ (ยกเว้นติ๊กจดจำในเครื่อง)
+            updateAdminNav();
+            showView('search');
+        }
+
+        function openAdminModal(){
+            const m = document.getElementById('adminModal');
+            m.classList.remove('hidden'); m.classList.add('flex');
+            document.getElementById('adminModalPass').value = '';
+            document.getElementById('adminModalError').classList.add('hidden');
+            setTimeout(() => document.getElementById('adminModalPass').focus(), 60);
+        }
+
+        function closeAdminModal(){
+            const m = document.getElementById('adminModal');
+            m.classList.add('hidden'); m.classList.remove('flex');
+            pendingAdminView = null;
+        }
+
+        async function submitAdminModal(){
+            const pass = document.getElementById('adminModalPass').value.trim();
+            if (!pass) return;
+            const remember = document.getElementById('adminModalRemember').checked;
+            if (!(await tryUnlock(pass, remember, 'adminModalError'))) return;
+            const v = pendingAdminView;
+            closeAdminModal();
+            pendingAdminView = v;
+            enterAdminMode();
+        }
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape' && !document.getElementById('adminModal').classList.contains('hidden')) closeAdminModal();
+        });
 
         function togglePass(inputId, eyeId){
             const inp = document.getElementById(inputId || 'teacherPass');
@@ -2060,17 +2179,6 @@
             }
         }
 
-        // กด Enter ที่หน้าล็อกอิน (ตั้งค่าระบบ / คะแนนเก็บ) = เข้าสู่ระบบ จะโฟกัสอยู่ที่ช่องรหัสหรือไม่ก็ได้
-        document.addEventListener('keydown', e => {
-            if (e.key !== 'Enter' || e.isComposing || e.defaultPrevented) return;
-            if (currentView !== 'notify' && currentView !== 'scores') return;
-            if (isAdminUnlocked()) return;
-            const t = document.activeElement;
-            if (t && (t.tagName === 'BUTTON' || t.tagName === 'A' || t.tagName === 'SELECT' || t.type === 'checkbox')) return;   // ให้ปุ่ม/ช่องติ๊กทำงานของมันเอง
-            e.preventDefault();
-            if (currentView === 'notify') teacherLogin(); else scoresLogin();
-        });
-
         async function teacherLogin(){
             const pass = document.getElementById('teacherPass').value.trim();
             const remember = document.getElementById('rememberAdmin')?.checked;
@@ -2086,6 +2194,7 @@
         }
 
         function adminLogout(){
+            adminMode = false;
             adminSession = false;
             activePasscode = TEACHER_PASSCODE;
             try { localStorage.removeItem(ADMIN_KEY); localStorage.removeItem(ADMIN_PASS_KEY); } catch (e) {}
