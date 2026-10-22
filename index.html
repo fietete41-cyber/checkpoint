@@ -2268,17 +2268,17 @@
             return String(s || '').replace(/[-]/g, c => THAI_PUA[c] || '').replace(/ํา/g, 'ำ');
         }
 
-        /* อ่านใบรายชื่อนักศึกษาแบบ PDF (ตารางมี ลำดับ · รหัสประจำตัว · ชื่อ · นามสกุล) + ข้อมูลหัวกระดาษ (วิชา/กลุ่มเรียน/ครู) */
+        /* อ่านใบรายชื่อนักศึกษาแบบ PDF (ตารางมี ลำดับ · รหัสประจำตัว · ชื่อ · นามสกุล) */
         async function parsePdfRoster(file){
             await loadPdfLib();
             const doc = await pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
             const rows = [];
-            const meta = { subjectCode: '', subjectName: '', group: '', teacher: '' };
+            const meta = { group: '' };      // ใช้เฉพาะรายชื่อ + เลขกลุ่มเรียน (เป็นค่าตั้งต้นของช่อง "ห้อง")
             for (let p = 1; p <= doc.numPages; p++){
                 const tc = await (await doc.getPage(p)).getTextContent();
                 const items = tc.items.map(i => ({ s: fixThai(i.str).trim(), x: i.transform[4], y: i.transform[5] })).filter(i => i.s);
 
-                // ข้อมูลหัวกระดาษ: หาค่าที่อยู่ใกล้ป้ายชื่อ (ค่าจะพิมพ์ทับเส้นจุด)
+                // เลขกลุ่มเรียนจากหัวกระดาษ: หาค่าที่อยู่ใกล้ป้าย (ค่าจะพิมพ์ทับเส้นจุด)
                 const near = (label, re) => {
                     const l = items.find(i => i.s.includes(label));
                     if (!l) return '';
@@ -2286,9 +2286,6 @@
                     return c ? c.s : '';
                 };
                 if (!meta.group) meta.group = near('กลุ่มเรียน', /^[A-Za-z0-9\-\/]{4,}$/);
-                if (!meta.subjectCode) meta.subjectCode = near('รหัสวิชา', /^[A-Za-z0-9\-]{4,}$/);
-                if (!meta.subjectName) meta.subjectName = near('ชื่อวิชา', /\S/);
-                if (!meta.teacher) meta.teacher = near('ชื่อครูผู้สอน', /\S/);
 
                 // จัดกลุ่มข้อความเป็นบรรทัดตามแกน y
                 const lines = [];
@@ -2328,10 +2325,7 @@
                     const rows = parsed.flatMap(p => p.rows);
                     if (!rows.length) throw new Error('ไม่พบตารางรายชื่อใน PDF (ถ้าเป็นรูปสแกน ต้องแปลงเป็น Excel ก่อน)');
                     buildImportTable([['ลำดับ', 'รหัสประจำตัว', 'ชื่อ-นามสกุล', 'กลุ่มเรียน'], ...rows]);
-                    const m = parsed[0].meta;
-                    note.innerHTML = '<i class="fas fa-file-pdf mr-2 text-rose-500"></i>อ่านจาก PDF ' + parsed.length + ' ไฟล์' +
-                        (m.subjectName ? ' · วิชา <b>' + escHtml(m.subjectName) + '</b>' + (m.subjectCode ? ' (' + escHtml(m.subjectCode) + ')' : '') : '') +
-                        (m.teacher ? ' · ครู ' + escHtml(m.teacher) : '') +
+                    note.innerHTML = '<i class="fas fa-file-pdf mr-2 text-rose-500"></i>อ่านจาก PDF ' + parsed.length + ' ไฟล์ (เอาเฉพาะรายชื่อ)' +
                         '<br>' + parsed.map(p => escHtml(p.meta.group || p.name) + ' = ' + p.rows.length + ' คน').join(' · ') +
                         '<br><span class="text-xs">คอลัมน์ "ห้อง" ใช้เลขกลุ่มเรียนจากไฟล์ — จะตั้งชื่อห้องเองก็ได้ในช่อง "ตั้งชื่อห้องเอง" ด้านล่าง</span>';
                     note.classList.remove('hidden');
