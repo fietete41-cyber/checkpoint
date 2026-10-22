@@ -237,17 +237,37 @@
 
         .roster-sticky-h{ background:var(--c1); color:var(--on); }
 
+        /* สวิตซ์โหมดผู้ดูแล: แคปซูลโปร่งแสง + ราง/ปุ่มกลมมีไอคอนล็อก เปลี่ยนเป็นสีเขียวเรืองแสงเมื่อเปิด */
         .admin-switch{
-            display:inline-flex; align-items:center; gap:.45rem; flex-shrink:0;
-            padding:.3rem .45rem .3rem .7rem; border-radius:9999px; cursor:pointer;
-            font-size:.75rem; font-weight:600; color:inherit; line-height:1;
-            background:rgba(127,127,127,.14); border:1px solid rgba(127,127,127,.32); transition:background .2s;
+            display:inline-flex; align-items:center; gap:.6rem; flex-shrink:0;
+            padding:.22rem .26rem .22rem .85rem; border-radius:9999px; cursor:pointer;
+            font-size:.78rem; font-weight:700; letter-spacing:.01em; color:inherit; line-height:1; white-space:nowrap;
+            background:rgba(255,255,255,.14); border:1px solid rgba(127,127,127,.30);
+            box-shadow:0 2px 10px -4px rgba(15,23,42,.35), inset 0 1px 0 rgba(255,255,255,.35);
+            backdrop-filter:blur(8px);
+            transition:background .25s, border-color .25s, box-shadow .25s, transform .15s;
         }
-        .admin-switch:hover{ background:rgba(127,127,127,.24); }
-        .admin-switch .as-track{ position:relative; width:2rem; height:1.1rem; border-radius:9999px; background:rgba(127,127,127,.45); transition:background .2s; }
-        .admin-switch .as-knob{ position:absolute; top:.1rem; left:.1rem; width:.9rem; height:.9rem; border-radius:9999px; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.35); transition:transform .2s; }
-        html.mode-admin .admin-switch .as-track{ background:#22c55e; }
-        html.mode-admin .admin-switch .as-knob{ transform:translateX(.9rem); }
+        .admin-switch:hover{ background:rgba(255,255,255,.26); transform:translateY(-1px); }
+        .admin-switch:active{ transform:scale(.97); }
+        .admin-switch:focus-visible{ outline:2px solid #22c55e; outline-offset:2px; }
+        .admin-switch .as-track{
+            position:relative; width:3rem; height:1.65rem; border-radius:9999px; flex-shrink:0;
+            background:linear-gradient(135deg,#94a3b8,#b6c2d1);
+            box-shadow:inset 0 2px 4px rgba(15,23,42,.28);
+            transition:background .3s, box-shadow .3s;
+        }
+        .admin-switch .as-knob{
+            position:absolute; top:.17rem; left:.17rem; width:1.31rem; height:1.31rem; border-radius:9999px;
+            display:flex; align-items:center; justify-content:center;
+            background:#fff; color:#64748b; font-size:.6rem;
+            box-shadow:0 2px 6px rgba(15,23,42,.4);
+            transition:transform .3s cubic-bezier(.34,1.56,.64,1), color .3s;
+        }
+        .admin-switch:hover .as-knob{ transform:scale(1.07); }
+        html.mode-admin .admin-switch{ border-color:rgba(34,197,94,.65); box-shadow:0 0 0 3px rgba(34,197,94,.18), 0 4px 14px -4px rgba(34,197,94,.55); }
+        html.mode-admin .admin-switch .as-track{ background:linear-gradient(135deg,#22c55e,#10b981); box-shadow:inset 0 2px 4px rgba(6,78,59,.35), 0 0 10px rgba(34,197,94,.55); }
+        html.mode-admin .admin-switch .as-knob{ transform:translateX(1.35rem); color:#16a34a; }
+        html.mode-admin .admin-switch:hover .as-knob{ transform:translateX(1.35rem) scale(1.07); }
 
         /* แถบเมนูล่างแบบแอป */
         .bottom-nav{
@@ -418,7 +438,7 @@
         <img id="mobileAppbarLogo" src="https://i.postimg.cc/3xWMgCbt/Neutral-Modern-Illustrated-Community-Sports-Carnival-Flyer-7-x-10-6-6-x-9-9-6-x-9.png" alt="โลโก้">
         <span id="mobileAppbarTitle" class="font-semibold text-sm truncate">ค้นหาคะแนน</span>
         <button type="button" class="admin-switch ml-auto" onclick="toggleAdminMode()" role="switch" aria-checked="false" title="โหมดผู้ดูแล (ครู)">
-            <i class="fas fa-lock as-ico"></i><span class="as-label">ผู้ดูแล</span><span class="as-track"><span class="as-knob"></span></span>
+            <span class="as-label">ผู้ดูแล</span><span class="as-track"><span class="as-knob"><i class="fas fa-lock as-ico"></i></span></span>
         </button>
     </div>
 
@@ -428,7 +448,7 @@
     <nav class="glass-nav shadow-lg sticky top-0 z-50 hidden md:block">
         <div class="container mx-auto px-2 sm:px-4 relative">
             <button type="button" class="admin-switch absolute right-3 top-1/2 -translate-y-1/2 z-10" style="color:var(--accent-dark)" onclick="toggleAdminMode()" role="switch" aria-checked="false" title="โหมดผู้ดูแล (ครู)">
-                <i class="fas fa-lock as-ico"></i><span class="as-label">ผู้ดูแล</span><span class="as-track"><span class="as-knob"></span></span>
+                <span class="as-label">ผู้ดูแล</span><span class="as-track"><span class="as-knob"><i class="fas fa-lock as-ico"></i></span></span>
             </button>
             <div class="flex flex-nowrap sm:flex-wrap justify-start sm:justify-center gap-2 sm:gap-3 py-3 px-28 overflow-x-auto no-scrollbar">
                 <button data-view="roster" onclick="showView('roster')" class="nav-pill shrink-0 student-only"><i class="fas fa-table-list sparkle"></i><span class="whitespace-nowrap">ตารางคะแนน</span></button>
@@ -2196,6 +2216,7 @@
             document.documentElement.classList.toggle('mode-admin', adminMode);
             document.querySelectorAll('.admin-switch').forEach(b => b.setAttribute('aria-checked', adminMode ? 'true' : 'false'));
             document.querySelectorAll('.admin-switch .as-ico').forEach(i => { i.className = 'fas as-ico ' + (adminMode ? 'fa-lock-open' : 'fa-lock'); });
+            document.querySelectorAll('.admin-switch .as-label').forEach(l => { l.textContent = adminMode ? 'โหมดผู้ดูแล' : 'ผู้ดูแล'; });
         }
 
         function toggleAdminMode(){
