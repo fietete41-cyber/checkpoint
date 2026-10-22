@@ -378,18 +378,18 @@
                          alt="โลโก้" class="w-16 h-16 sm:w-20 sm:h-20 md:w-28 md:h-28 rounded-full shadow-lg ring-4 ring-white/30 shrink-0 object-cover bg-white/10">
                     <div>
                         <h1 id="hdrTitle" class="text-base sm:text-lg md:text-2xl font-bold leading-tight">ระบบตรวจสอบคะแนนผู้เรียน</h1>
-                        <p id="hdrSubtitle" class="text-xs sm:text-sm md:text-base opacity-95">วิชา งานเครื่องทำความเย็นและเครื่องปรับอากาศ • ระดับ ปวช.2</p>
+                        <p id="hdrSubtitle" class="text-xs sm:text-sm md:text-base opacity-95">เลือกรายวิชาแล้วกรอกเลขประจำตัวเพื่อตรวจสอบคะแนน</p>
                         <div id="hdrChips" class="text-[11px] sm:text-xs md:text-sm opacity-90 mt-1 flex flex-wrap justify-center sm:justify-start gap-x-3 gap-y-1">
-                            <span>❄️ ระบบทำความเย็น</span>
-                            <span>🌡️ ปรับอากาศ</span>
-                            <span>🔧 ติดตั้ง–ซ่อมบำรุง</span>
+                            <span>📚 เลือกรายวิชา</span>
+                            <span>🔍 ค้นด้วยเลขประจำตัว</span>
+                            <span>💬 แจ้งผ่าน LINE</span>
                         </div>
                     </div>
                 </div>
                 <div id="hdrIcons" class="flex items-center gap-4 text-2xl md:text-3xl">
-                    <i class="fas fa-snowflake animate-pulse-slow"></i>
-                    <i class="fas fa-fan float-animation"></i>
-                    <i class="fas fa-temperature-low animate-bounce-slow"></i>
+                    <i class="fas fa-book-open animate-pulse-slow"></i>
+                    <i class="fas fa-graduation-cap float-animation"></i>
+                    <i class="fas fa-chart-line animate-bounce-slow"></i>
                 </div>
             </div>
         </div>
@@ -415,6 +415,21 @@
             </div>
         </div>
     </nav>
+
+    <!-- เลือกรายวิชา (แสดงทุกหน้า ยกเว้นตั้งค่าระบบ) -->
+    <div id="subjectBar" class="container mx-auto px-4 pt-5 sm:pt-6">
+        <div class="max-w-2xl mx-auto frost-card rounded-2xl px-4 py-3 flex items-center gap-3">
+            <span class="w-9 h-9 flex items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-cyan-600 text-white shrink-0"><i class="fas fa-book-open"></i></span>
+            <div class="flex-1 min-w-0">
+                <label for="subjectSelect" class="block text-[11px] sm:text-xs text-slate-500 leading-none mb-1">เลือกรายวิชา</label>
+                <select id="subjectSelect" onchange="onSubjectChange(this.value)"
+                        class="w-full appearance-none bg-transparent font-semibold text-slate-800 text-sm sm:text-base outline-none cursor-pointer truncate">
+                    <option value="">กำลังโหลดรายวิชา...</option>
+                </select>
+            </div>
+            <i class="fas fa-chevron-down text-slate-400 text-xs shrink-0 pointer-events-none"></i>
+        </div>
+    </div>
 
     <!-- Search Section -->
     <section id="search" class="view py-10 sm:py-12">
@@ -611,7 +626,7 @@
                     <i class="fas fa-trophy"></i>
                 </div>
                 <h2 class="text-2xl md:text-3xl font-bold text-slate-800 mb-2">ทำเนียบคนเก่ง · Top 10</h2>
-                <p id="top10Subtitle" class="text-sm sm:text-base text-slate-500 px-2">ผู้เรียนที่ทำคะแนนสูงสุดในวิชางานเครื่องทำความเย็นและเครื่องปรับอากาศ</p>
+                <p id="top10Subtitle" class="text-sm sm:text-base text-slate-500 px-2">ผู้เรียนที่ทำคะแนนสูงสุดในรายวิชาที่เลือก</p>
             </div>
 
             <!-- ตัวกรอง: ทั้งหมด / รายห้อง -->
@@ -829,6 +844,27 @@
                     <button onclick="adminLogout()" class="text-sm font-medium text-slate-500 hover:text-red-500 transition"><i class="fas fa-right-from-bracket mr-1"></i>ออกจากระบบ</button>
                 </div>
 
+                <!-- ==== รายวิชาในระบบ ==== -->
+                <div class="frost-card rounded-3xl p-5 sm:p-6 md:p-8">
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="w-9 h-9 flex items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shrink-0"><i class="fas fa-book-open"></i></span>
+                        <h3 class="text-base sm:text-lg font-bold text-slate-800">รายวิชาในระบบ</h3>
+                    </div>
+                    <p class="text-xs sm:text-sm text-slate-500 mb-4">1 รายวิชา = 1 ชีตในสเปรดชีต ผู้เรียนเลือกวิชาจากรายการด้านบนของหน้าเว็บ · ชื่อครู/เบอร์โทรของแต่ละวิชาใช้ในข้อความ LINE</p>
+                    <div id="subjectList" class="space-y-3"></div>
+
+                    <div class="mt-5 pt-5 border-t border-slate-200">
+                        <div class="text-sm font-semibold text-slate-700 mb-3"><i class="fas fa-plus-circle text-emerald-500 mr-2"></i>เพิ่มรายวิชาใหม่</div>
+                        <div class="grid sm:grid-cols-3 gap-3">
+                            <input type="text" id="newSubName" class="input-field" placeholder="ชื่อวิชา เช่น คณิตศาสตร์">
+                            <input type="text" id="newSubTeacher" class="input-field" placeholder="ชื่อครูผู้สอน">
+                            <input type="tel" id="newSubPhone" class="input-field" placeholder="เบอร์โทรครู (ถ้ามี)">
+                        </div>
+                        <button onclick="addSubjectUI()" class="btn-primary mt-3"><i class="fas fa-plus mr-2"></i>เพิ่มรายวิชา</button>
+                        <p class="text-xs text-slate-400 mt-3"><i class="fas fa-circle-info mr-1"></i>ระบบสร้างชีตใหม่ให้อัตโนมัติ (หัวข้อคะแนนเริ่มต้น 3 ช่อง — ไปปรับที่หน้า "คะแนนเก็บ") · การลบรายวิชาเป็นแค่เอาออกจากรายการ ข้อมูลในชีตยังอยู่</p>
+                    </div>
+                </div>
+
                 <!-- ==== เปลี่ยนรหัสผ่าน ==== -->
                 <div class="frost-card rounded-3xl p-5 sm:p-6 md:p-8">
                     <div class="flex items-center gap-3 mb-4">
@@ -907,7 +943,7 @@
                         <span class="w-9 h-9 flex items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-cyan-600 text-white shrink-0"><i class="fas fa-sliders"></i></span>
                         <h3 class="text-base sm:text-lg font-bold text-slate-800">ตั้งค่าส่วนหัวของระบบ</h3>
                     </div>
-                    <p class="text-xs sm:text-sm text-slate-500 mb-5">แก้ไขได้ทุกจุด — รูปโลโก้ ข้อความ ป้าย และไอคอน เพื่อนำระบบไปใช้กับรายวิชาอื่น (ตัวอย่างจะปรับทันทีขณะพิมพ์)</p>
+                    <p class="text-xs sm:text-sm text-slate-500 mb-5">แก้ไขได้ทุกจุด — รูปโลโก้ ข้อความ ป้าย และไอคอน (ตัวอย่างจะปรับทันทีขณะพิมพ์)</p>
 
                     <div class="grid md:grid-cols-2 gap-4">
                         <div>
@@ -949,11 +985,11 @@
 
                     <div class="grid md:grid-cols-2 gap-4 mt-4">
                         <div>
-                            <label class="label">ชื่อวิชา (ใช้ในข้อความแจ้งเตือน &amp; หน้า Top 10)</label>
+                            <label class="label">ชื่อวิชาสำรอง (ใช้เมื่อยังไม่ได้เพิ่มรายวิชาด้านบน)</label>
                             <input type="text" id="setSubject" class="input-field" oninput="previewSettings()">
                         </div>
                         <div>
-                            <label class="label">ชื่อครูผู้สอน (ลงท้ายข้อความแจ้งเตือน LINE)</label>
+                            <label class="label">ชื่อครูสำรอง (ใช้เมื่อรายวิชาไม่ได้ระบุครู)</label>
                             <input type="text" id="setTeacher" class="input-field" oninput="previewSettings()">
                         </div>
                         <div>
@@ -1000,12 +1036,12 @@
         const DEFAULT_SETTINGS = {
             logo: 'https://i.postimg.cc/3xWMgCbt/Neutral-Modern-Illustrated-Community-Sports-Carnival-Flyer-7-x-10-6-6-x-9-9-6-x-9.png',
             title: 'ระบบตรวจสอบคะแนนผู้เรียน',
-            subtitle: 'วิชา งานเครื่องทำความเย็นและเครื่องปรับอากาศ • ระดับ ปวช.2',
-            chips: ['❄️ ระบบทำความเย็น', '🌡️ ปรับอากาศ', '🔧 ติดตั้ง–ซ่อมบำรุง'],
-            icons: ['fa-snowflake', 'fa-fan', 'fa-temperature-low'],
-            subject: 'งานเครื่องทำความเย็นและเครื่องปรับอากาศ',
-            teacher: 'ครูเต้ย (รังสรรค์ ลอยแก้ว)',
-            pageTitle: 'ระบบตรวจสอบคะแนนออนไลน์ | งานเครื่องทำความเย็นและเครื่องปรับอากาศ'
+            subtitle: 'เลือกรายวิชาแล้วกรอกเลขประจำตัวเพื่อตรวจสอบคะแนน',
+            chips: ['📚 เลือกรายวิชา', '🔍 ค้นด้วยเลขประจำตัว', '💬 แจ้งผ่าน LINE'],
+            icons: ['fa-book-open', 'fa-graduation-cap', 'fa-chart-line'],
+            subject: 'งานเครื่องทำความเย็นและเครื่องปรับอากาศ',   // ใช้เมื่อยังไม่มีรายวิชาในระบบ (สำรอง)
+            teacher: 'ครูเต้ย (รังสรรค์ ลอยแก้ว)',                 // ใช้เมื่อรายวิชาไม่ได้ระบุครู (สำรอง)
+            pageTitle: 'ระบบตรวจสอบคะแนนผู้เรียน'
         };
         const SETTINGS_KEY = 'scoreAppSettings';
         let settings = loadSettings();
@@ -1043,7 +1079,12 @@
                 .map((ic, i) => `<i class="fas ${ic} ${anim[i % 3]}"></i>`).join('');
 
             if (s.pageTitle) document.title = s.pageTitle;
-            setText('top10Subtitle', 'ผู้เรียนที่ทำคะแนนสูงสุดในวิชา' + (s.subject || ''));
+            updateTop10Subtitle();
+        }
+
+        function updateTop10Subtitle(){
+            const el = document.getElementById('top10Subtitle');
+            if (el) el.textContent = 'ผู้เรียนที่ทำคะแนนสูงสุดในวิชา' + subjectName();
         }
 
         function fillSettingsForm(){
@@ -1254,6 +1295,7 @@
         }
 
         let allStudentsData = [];
+        let currentView = 'search';
         let dashboardLoaded = false;
         let top10Loaded = false;
         const VIEWS = ['search', 'dashboard', 'top10', 'scores', 'notify'];
@@ -1268,6 +1310,9 @@
         /* สลับหน้าแบบ "หน้าใครหน้ามัน" — แสดงทีละหน้าจากแถบเมนู */
         function showView(name){
             if (!VIEWS.includes(name)) name = 'search';
+            currentView = name;
+            const sBar = document.getElementById('subjectBar');
+            if (sBar) sBar.classList.toggle('hidden', name === 'notify');
 
             document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
             document.getElementById(name).classList.remove('hidden');
@@ -1338,14 +1383,74 @@
             return d.getDate() + ' ' + m[d.getMonth()] + ' ' + (d.getFullYear() + 543);
         }
 
+        /* ==================== รายวิชา (หลายวิชาในระบบเดียว) ==================== */
+        const SUBJECT_KEY = 'scoreAppSubject';
+        let subjects = [];            // [{id, name, teacher, phone}] — id คือชื่อชีต
+        let currentSubject = '';      // id ของวิชาที่เลือกอยู่ ('' = วิชาแรก/วิชาสำรอง)
+
+        function fallbackSubject(){ return { id:'', name: settings.subject, teacher: settings.teacher, phone:'' }; }
+        function currentSubjectInfo(){ return subjects.find(s => s.id === currentSubject) || subjects[0] || fallbackSubject(); }
+        function subjectName(){ return currentSubjectInfo().name || settings.subject; }
+        function subjectTeacher(){ return currentSubjectInfo().teacher || settings.teacher; }
+
+        async function loadSubjects(){
+            let list = [];
+            try{
+                if (!API_URL.includes('YOUR_SCRIPT_ID')){
+                    const res = await fetch(`${API_URL}?action=getSubjects`);
+                    const data = await res.json();
+                    if (data && data.success && data.data && Array.isArray(data.data.subjects)) list = data.data.subjects;
+                }
+            }catch(err){ console.warn('getSubjects:', err); }
+            subjects = list.length ? list : [fallbackSubject()];   // เซิร์ฟเวอร์เก่า/ยังไม่มีรายวิชา -> วิชาเดียวแบบเดิม
+            let saved = '';
+            try { saved = localStorage.getItem(SUBJECT_KEY) || ''; } catch (e) {}
+            if (!subjects.some(s => s.id === currentSubject)) currentSubject = subjects.some(s => s.id === saved) ? saved : subjects[0].id;
+            renderSubjectBar();
+            updateTop10Subtitle();
+            if (document.getElementById('subjectList')) renderSubjectList();
+        }
+        let subjectsReady = loadSubjects();
+
+        function renderSubjectBar(){
+            const sel = document.getElementById('subjectSelect');
+            if (!sel) return;
+            sel.innerHTML = subjects.map(s => `<option value="${escHtml(s.id)}">${escHtml(s.name || s.id)}</option>`).join('');
+            sel.value = currentSubject;
+        }
+
+        function onSubjectChange(id){
+            if (id === currentSubject) return;
+            if (scoreDirty){
+                let ok = true;
+                try { ok = window.confirm('มีการแก้ไขคะแนนที่ยังไม่บันทึก ต้องการเปลี่ยนรายวิชา (ทิ้งการแก้ไข) หรือไม่?'); } catch (e) { ok = true; }
+                if (!ok){ document.getElementById('subjectSelect').value = currentSubject; return; }
+            }
+            currentSubject = id;
+            try { localStorage.setItem(SUBJECT_KEY, id); } catch (e) {}
+            allStudentsData = [];
+            dashboardLoaded = false;
+            top10Loaded = false;
+            scoreEdits = {};
+            headerDraft = [];
+            scoreRoom = null;
+            markScoreDirty(false);
+            const sr = document.getElementById('studentResult');
+            sr.dataset.hasResult = ''; sr.classList.add('hidden');
+            updateTop10Subtitle();
+            showView(currentView);
+            if (document.getElementById('studentId').value.trim() && currentView === 'search') searchStudent();
+        }
+
         /* ==================== API : อ่านข้อมูล ==================== */
         async function fetchAllStudents(){
             try{
+                await subjectsReady;
                 if (API_URL.includes('YOUR_SCRIPT_ID')){
                     allStudentsData = generateSampleData();
                     return allStudentsData;
                 }
-                const res = await fetch(`${API_URL}?action=getAllStudents`);
+                const res = await fetch(`${API_URL}?action=getAllStudents&subject=${encodeURIComponent(currentSubject)}`);
                 if (!res.ok) throw new Error('HTTP ' + res.status);
                 const data = await res.json();
                 if (data.success){
@@ -1364,11 +1469,13 @@
                     return allStudentsData;
                 }
                 console.error('API Error:', data.error);
-                allStudentsData = generateSampleData();
+                toast('อ่านข้อมูลรายวิชานี้ไม่ได้: ' + (data.error || 'ไม่ทราบสาเหตุ'), 'error');
+                allStudentsData = [];
                 return allStudentsData;
             }catch(err){
                 console.error('Error fetching students:', err);
-                allStudentsData = generateSampleData();
+                toast('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาลองใหม่', 'error');
+                allStudentsData = [];
                 return allStudentsData;
             }
         }
@@ -1427,6 +1534,7 @@
                 <div class="rounded-2xl border border-slate-200 bg-white overflow-hidden">
                     <div class="bg-gradient-to-r from-sky-500 to-cyan-600 text-white p-4 flex items-center justify-between gap-3">
                         <div class="min-w-0">
+                            <div class="text-[11px] sm:text-xs opacity-90 truncate"><i class="fas fa-book-open mr-1"></i>${escHtml(subjectName())}</div>
                             <div class="font-bold text-base sm:text-lg truncate">${student.name}</div>
                             <div class="text-xs sm:text-sm opacity-90">เลขที่ ${student.no} • เลขประจำตัว ${student.studentId} • ${student.room}</div>
                         </div>
@@ -1841,6 +1949,7 @@
             if (view === 'notify'){
                 fillSettingsForm();
                 renderThemeUI();
+                renderSubjectList();
                 const _pc = document.getElementById('pwCur'); if (_pc) _pc.value = activePasscode;
             } else if (view === 'scores'){
                 initScoresPanel();
@@ -1903,6 +2012,7 @@
             if (API_URL.includes('YOUR_SCRIPT_ID')){ toast('ยังไม่ได้ตั้งค่า API_URL', 'error'); return null; }
             try {
                 if (payload.passcode == null) payload.passcode = activePasscode;
+                if (payload.subject == null) payload.subject = currentSubject;   // ทุกการแก้ไขไปที่วิชาที่เลือกอยู่
                 const res = await fetch(API_URL, { method: 'POST', body: new URLSearchParams({ action, payload: JSON.stringify(payload) }) });
                 const data = await res.json();
                 if (!data.success) toast('ไม่สำเร็จ: ' + (data.error || 'ไม่ทราบสาเหตุ'), 'error');
@@ -1911,6 +2021,76 @@
                 toast('เชื่อมต่อไม่ได้: ' + err.message, 'error');
                 return null;
             }
+        }
+
+        /* ---- จัดการรายวิชา (หน้าตั้งค่าระบบ) ---- */
+        function renderSubjectList(){
+            const wrap = document.getElementById('subjectList');
+            if (!wrap) return;
+            const real = subjects.filter(s => s.id !== '');   // วิชาสำรอง (id ว่าง) ไม่ใช่รายวิชาจริง
+            if (!real.length){
+                wrap.innerHTML = '<p class="text-sm text-slate-500 bg-slate-50 rounded-xl px-4 py-3">ยังไม่มีรายวิชาในรายการ — ตอนนี้ใช้วิชาสำรองจากโค้ดฝั่งเซิร์ฟเวอร์ · เพิ่มรายวิชาด้านล่างได้เลย (ถ้าเซิร์ฟเวอร์ยังเป็นเวอร์ชันเก่า ต้องอัปเดต Apps Script ก่อน)</p>';
+                return;
+            }
+            wrap.innerHTML = real.map((s, i) => `
+                <div class="rounded-2xl border border-slate-200 bg-white/70 p-3 sm:p-4" data-sid="${escHtml(s.id)}">
+                    <div class="grid sm:grid-cols-3 gap-2">
+                        <input type="text" class="input-field sub-name" value="${escHtml(s.name)}" placeholder="ชื่อวิชา" aria-label="ชื่อวิชา">
+                        <input type="text" class="input-field sub-teacher" value="${escHtml(s.teacher)}" placeholder="ชื่อครูผู้สอน" aria-label="ชื่อครู">
+                        <input type="tel" class="input-field sub-phone" value="${escHtml(s.phone)}" placeholder="เบอร์โทรครู" aria-label="เบอร์โทร">
+                    </div>
+                    <div class="flex items-center justify-between gap-2 mt-3">
+                        <span class="text-[11px] text-slate-400 truncate"><i class="fas fa-table mr-1"></i>ชีต: ${escHtml(s.id)}</span>
+                        <div class="flex gap-2 shrink-0">
+                            <button type="button" onclick="saveSubjectUI(${i})" class="btn-secondary text-sm"><i class="fas fa-floppy-disk mr-1"></i>บันทึก</button>
+                            <button type="button" onclick="deleteSubjectUI(${i})" class="btn-secondary text-sm text-red-500"><i class="fas fa-trash mr-1"></i>ลบออก</button>
+                        </div>
+                    </div>
+                </div>`).join('');
+        }
+
+        async function refreshSubjectsAfterChange(){
+            subjectsReady = loadSubjects();
+            await subjectsReady;
+            allStudentsData = []; dashboardLoaded = false; top10Loaded = false;
+            renderSubjectList();
+        }
+
+        async function addSubjectUI(){
+            const name = document.getElementById('newSubName').value.trim();
+            if (!name) return toast('กรุณากรอกชื่อวิชา', 'error');
+            const res = await postAdmin('addSubject', {
+                name, teacher: document.getElementById('newSubTeacher').value.trim(),
+                phone: document.getElementById('newSubPhone').value.trim(), subject: ''
+            });
+            if (res && res.success){
+                toast(res.message || 'เพิ่มรายวิชาแล้ว', 'success');
+                ['newSubName', 'newSubTeacher', 'newSubPhone'].forEach(id => { document.getElementById(id).value = ''; });
+                await refreshSubjectsAfterChange();
+            }
+        }
+
+        async function saveSubjectUI(i){
+            const s = subjects.filter(x => x.id !== '')[i];
+            const row = document.querySelector(`#subjectList [data-sid="${CSS.escape(s.id)}"]`);
+            if (!s || !row) return;
+            const name = row.querySelector('.sub-name').value.trim();
+            if (!name) return toast('ชื่อวิชาต้องไม่ว่าง', 'error');
+            const res = await postAdmin('updateSubject', {
+                id: s.id, name, teacher: row.querySelector('.sub-teacher').value.trim(),
+                phone: row.querySelector('.sub-phone').value.trim(), subject: ''
+            });
+            if (res && res.success){ toast('บันทึกรายวิชาแล้ว', 'success'); await refreshSubjectsAfterChange(); }
+        }
+
+        async function deleteSubjectUI(i){
+            const s = subjects.filter(x => x.id !== '')[i];
+            if (!s) return;
+            let ok = true;
+            try { ok = window.confirm('เอารายวิชา "' + s.name + '" ออกจากรายการ?\n(ข้อมูลในชีตยังอยู่ ไม่ถูกลบ)'); } catch (e) { ok = true; }
+            if (!ok) return;
+            const res = await postAdmin('deleteSubject', { id: s.id, subject: '' });
+            if (res && res.success){ toast('เอารายวิชาออกจากรายการแล้ว', 'success'); await refreshSubjectsAfterChange(); }
         }
 
         async function reloadAllData(){
@@ -2173,7 +2353,7 @@
             const level = document.getElementById('notifyLevel').value;
             const L = [];
             L.push('🔔 แจ้งเตือนงาน/คะแนนที่ค้างส่ง');
-            L.push('วิชา ' + settings.subject);
+            L.push('วิชา ' + subjectName());
             L.push('─────────────');
             L.push('👤 ' + s.name);
             L.push('🆔 เลขประจำตัว ' + s.studentId + '  •  🏫 ' + s.room);
@@ -2187,14 +2367,14 @@
             if (note) L.push('📝 ครูฝากถึงนักเรียน: ' + note);
             L.push('─────────────');
             L.push('คะแนนรวมปัจจุบัน ' + s.totalScore + '/100');
-            L.push('จาก ' + settings.teacher);
+            L.push('จาก ' + subjectTeacher());
             return L.join('\n');
         }
 
         function buildRoomSummary(room, rows){
             const L = [];
             L.push('🔔 สรุปงานค้างส่ง — ห้อง ' + room);
-            L.push('วิชา ' + settings.subject);
+            L.push('วิชา ' + subjectName());
             L.push('─────────────');
             rows.forEach(r => {
                 L.push('👤 ' + r.name + ' (' + r.studentId + ')');
@@ -2203,7 +2383,7 @@
                 L.push('');
             });
             L.push('รวม ' + rows.length + ' คนที่มีงานค้าง');
-            L.push('จาก ' + settings.teacher);
+            L.push('จาก ' + subjectTeacher());
             return L.join('\n');
         }
 
