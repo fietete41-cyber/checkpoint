@@ -864,6 +864,40 @@
                     </div>
                 </div>
 
+                <!-- ==== นำเข้ารายชื่อผู้เรียนจากไฟล์ ==== -->
+                <div class="frost-card rounded-3xl p-5 sm:p-6 md:p-8">
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="w-9 h-9 flex items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 text-white shrink-0"><i class="fas fa-file-import"></i></span>
+                        <h3 class="text-base sm:text-lg font-bold text-slate-800">นำเข้ารายชื่อผู้เรียนจากไฟล์</h3>
+                    </div>
+                    <p class="text-xs sm:text-sm text-slate-500 mb-4">รองรับไฟล์ Excel (.xlsx / .xls) และ CSV · ควรมีหัวตารางเช่น เลขประจำตัว, ชื่อ-นามสกุล, ห้อง (ระบบเดาคอลัมน์ให้ และแก้ได้ก่อนนำเข้า) · เลขประจำตัวที่มีอยู่แล้วจะถูกข้าม</p>
+
+                    <div class="grid sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="label">นำเข้าไปที่รายวิชา</label>
+                            <select id="importSubject" class="input-field"></select>
+                        </div>
+                        <div>
+                            <label class="label">ไฟล์รายชื่อ</label>
+                            <label class="btn-secondary cursor-pointer inline-flex text-sm w-full justify-center">
+                                <i class="fas fa-file-excel mr-2"></i><span id="importFileLabel">เลือกไฟล์จากเครื่อง</span>
+                                <input type="file" id="importFile" accept=".xlsx,.xls,.csv,text/csv" onchange="handleImportFile(this)" class="hidden">
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="importPreview" class="hidden mt-5">
+                        <div class="grid sm:grid-cols-3 gap-3">
+                            <div><label class="label">คอลัมน์เลขประจำตัว</label><select id="impColId" class="input-field" onchange="renderImportPreview()"></select></div>
+                            <div><label class="label">คอลัมน์ชื่อ-นามสกุล</label><select id="impColName" class="input-field" onchange="renderImportPreview()"></select></div>
+                            <div><label class="label">คอลัมน์ห้อง</label><select id="impColRoom" class="input-field" onchange="renderImportPreview()"></select></div>
+                        </div>
+                        <div id="importSummary" class="text-sm text-slate-600 mt-4"></div>
+                        <div class="table-responsive mt-2"><table class="w-full text-sm"><tbody id="importPreviewBody"></tbody></table></div>
+                        <button id="importBtn" onclick="runImport()" class="btn-primary mt-4"><i class="fas fa-file-import mr-2"></i>นำเข้ารายชื่อ</button>
+                    </div>
+                </div>
+
                 <!-- ==== เปลี่ยนรหัสผ่าน ==== -->
                 <div class="frost-card rounded-3xl p-5 sm:p-6 md:p-8">
                     <div class="flex items-center gap-3 mb-4">
@@ -1408,6 +1442,7 @@
             renderSubjectBar();
             updateTop10Subtitle();
             if (document.getElementById('subjectList')) renderSubjectList();
+            fillImportSubjects();
         }
         let subjectsReady = loadSubjects();
 
@@ -1988,6 +2023,7 @@
                 renderThemeUI();
                 subjectRoomsMap = null;
                 renderSubjectList();
+                fillImportSubjects();
                 const _pc = document.getElementById('pwCur'); if (_pc) _pc.value = activePasscode;
             } else if (view === 'scores'){
                 initScoresPanel();
@@ -2188,6 +2224,161 @@
             if (!ok) return;
             const res = await postAdmin('deleteSubject', { id: s.id, subject: '' });
             if (res && res.success){ toast('เอารายวิชาออกจากรายการแล้ว', 'success'); await refreshSubjectsAfterChange(); }
+        }
+
+        /* ---- นำเข้ารายชื่อผู้เรียนจากไฟล์ Excel/CSV ---- */
+        let importTable = null;       // { headers: [...], rows: [[...]] }
+        let importStudents = [];
+
+        function fillImportSubjects(){
+            const sel = document.getElementById('importSubject');
+            if (!sel) return;
+            const keep = sel.value;
+            sel.innerHTML = subjects.map(s => `<option value="${escHtml(s.id)}">${escHtml(s.name || s.id)}</option>`).join('');
+            sel.value = subjects.some(s => s.id === keep) && keep !== '' ? keep : currentSubject;
+        }
+
+        function loadXlsxLib(){
+            if (window.XLSX) return Promise.resolve();
+            return new Promise((resolve, reject) => {
+                const s = document.createElement('script');
+                s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+                s.onload = resolve;
+                s.onerror = () => reject(new Error('โหลดตัวอ่านไฟล์ไม่ได้ (ต้องเชื่อมต่ออินเทอร์เน็ต)'));
+                document.head.appendChild(s);
+            });
+        }
+
+        function colLetter(i){ let s = ''; i++; while (i > 0){ const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; }
+
+        async function handleImportFile(input){
+            const f = input.files && input.files[0];
+            if (!f) return;
+            document.getElementById('importFileLabel').textContent = f.name;
+            try{
+                await loadXlsxLib();
+                const buf = await f.arrayBuffer();
+                let wb;
+                if (/\.csv$/i.test(f.name) || f.type === 'text/csv'){
+                    let text;
+                    try { text = new TextDecoder('utf-8', { fatal: true }).decode(buf); }
+                    catch (e) { text = new TextDecoder('windows-874').decode(buf); }   // CSV ไทยจาก Excel เก่า
+                    wb = XLSX.read(text, { type: 'string' });
+                } else {
+                    wb = XLSX.read(buf, { type: 'array' });
+                }
+                const ws = wb.Sheets[wb.SheetNames[0]];
+                const grid = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false })
+                    .map(r => r.map(c => String(c == null ? '' : c).trim()))
+                    .filter(r => r.some(c => c !== ''));
+                if (!grid.length) throw new Error('ไม่พบข้อมูลในไฟล์');
+                buildImportTable(grid);
+            }catch(err){
+                console.error(err);
+                importTable = null;
+                document.getElementById('importPreview').classList.add('hidden');
+                toast('อ่านไฟล์ไม่สำเร็จ: ' + err.message, 'error');
+            }
+            input.value = '';
+        }
+
+        function buildImportTable(grid){
+            const idRe = /เลขประจำตัว|รหัส|student\s*_?id|^id$/i;
+            const nameRe = /ชื่อ|name/i;
+            let h = -1;
+            for (let i = 0; i < Math.min(grid.length, 15); i++){
+                if (grid[i].some(c => idRe.test(c)) && grid[i].some(c => nameRe.test(c))){ h = i; break; }
+            }
+            const width = Math.max(...grid.map(r => r.length));
+            let headers, rows;
+            if (h >= 0){
+                headers = Array.from({ length: width }, (_, i) => grid[h][i] || ('คอลัมน์ ' + colLetter(i)));
+                rows = grid.slice(h + 1);
+            } else {
+                headers = Array.from({ length: width }, (_, i) => 'คอลัมน์ ' + colLetter(i));
+                rows = grid;
+            }
+            rows = rows.map(r => Array.from({ length: width }, (_, i) => r[i] || ''));
+
+            const find = (re, skip = []) => headers.findIndex((t, i) => !skip.includes(i) && re.test(t));
+            let idCol, nameCol, roomCol;
+            if (h >= 0){
+                idCol = find(idRe);
+                const fullCol = find(/ชื่อ\s*[-–]?\s*(นามสกุล|สกุล)|ชื่อสกุล|full\s*name/i);
+                const firstCol = find(/^(ชื่อ|ชื่อจริง|first\s*name)$/i);
+                const lastCol = find(/นามสกุล|last\s*name|surname/i);
+                const prefixCol = find(/คำนำหน้า|prefix|title/i);
+                if (fullCol >= 0) nameCol = fullCol;
+                else if (firstCol >= 0){
+                    // ชื่อกับนามสกุลแยกคอลัมน์ -> สร้างคอลัมน์รวมให้
+                    headers.push('ชื่อ-นามสกุล (รวมจากไฟล์)');
+                    rows = rows.map(r => [...r, ((prefixCol >= 0 ? r[prefixCol] : '') + r[firstCol] + ' ' + (lastCol >= 0 ? r[lastCol] : '')).trim()]);
+                    nameCol = headers.length - 1;
+                } else nameCol = find(nameRe, [idCol]);
+                roomCol = find(/ห้อง|กลุ่ม|ชั้น|room|class/i, [idCol, nameCol]);
+            } else if (width >= 4){ idCol = 1; nameCol = 2; roomCol = 3; }
+            else if (width === 3){ idCol = 0; nameCol = 1; roomCol = 2; }
+            else { idCol = 0; nameCol = 1; roomCol = -1; }
+
+            importTable = { headers, rows };
+            const opts = (withNone) => (withNone ? '<option value="-1">(ไม่ใช้)</option>' : '') +
+                headers.map((t, i) => `<option value="${i}">${colLetter(i)}: ${escHtml(t)}</option>`).join('');
+            const setSel = (id, val, withNone) => { const el = document.getElementById(id); el.innerHTML = opts(withNone); el.value = String(val); };
+            setSel('impColId', idCol, false); setSel('impColName', nameCol, false); setSel('impColRoom', roomCol, true);
+            fillImportSubjects();
+            document.getElementById('importPreview').classList.remove('hidden');
+            renderImportPreview();
+        }
+
+        function renderImportPreview(){
+            if (!importTable) return;
+            const ci = +document.getElementById('impColId').value;
+            const cn = +document.getElementById('impColName').value;
+            const cr = +document.getElementById('impColRoom').value;
+            const seen = new Set(); let dupes = 0;
+            importStudents = [];
+            importTable.rows.forEach(r => {
+                const id = String(r[ci] || '').trim().replace(/\.0+$/, '');
+                const name = String(r[cn] || '').trim();
+                if (!id || !name) return;
+                if (seen.has(id)){ dupes++; return; }
+                seen.add(id);
+                importStudents.push({ studentId: id, name, room: cr >= 0 ? String(r[cr] || '').trim() : '' });
+            });
+            const rooms = [...new Set(importStudents.map(s => s.room).filter(Boolean))];
+            document.getElementById('importSummary').innerHTML =
+                `พบผู้เรียน <b>${importStudents.length}</b> คน` + (rooms.length ? ` · ${rooms.length} ห้อง (${escHtml(rooms.slice(0, 6).join(', '))}${rooms.length > 6 ? '…' : ''})` : '') +
+                (dupes ? ` · <span class="text-amber-600">เลขประจำตัวซ้ำในไฟล์ ${dupes} แถว (ใช้แถวแรก)</span>` : '') +
+                '<br><span class="text-xs text-slate-400">ตัวอย่าง 5 คนแรก — ตรวจว่าเลือกคอลัมน์ถูกต้องก่อนนำเข้า</span>';
+            document.getElementById('importPreviewBody').innerHTML =
+                '<tr class="bg-slate-100 text-slate-600"><th class="px-3 py-2 text-left">เลขประจำตัว</th><th class="px-3 py-2 text-left">ชื่อ-นามสกุล</th><th class="px-3 py-2 text-left">ห้อง</th></tr>' +
+                importStudents.slice(0, 5).map(s => `<tr class="border-b border-slate-100"><td class="px-3 py-2">${escHtml(s.studentId)}</td><td class="px-3 py-2">${escHtml(s.name)}</td><td class="px-3 py-2">${escHtml(s.room)}</td></tr>`).join('');
+            document.getElementById('importBtn').disabled = !importStudents.length;
+        }
+
+        async function runImport(){
+            if (!importStudents.length) return;
+            const subj = document.getElementById('importSubject').value;
+            const subjLabel = (subjects.find(s => s.id === subj) || {}).name || subj;
+            let ok = true;
+            try { ok = window.confirm('นำเข้า ' + importStudents.length + ' คน เข้าวิชา "' + subjLabel + '" ?'); } catch (e) { ok = true; }
+            if (!ok) return;
+            const btn = document.getElementById('importBtn');
+            btn.disabled = true;
+            let added = 0, skipped = 0;
+            for (let i = 0; i < importStudents.length; i += 400){
+                const res = await postAdmin('addStudents', { subject: subj, students: importStudents.slice(i, i + 400) });
+                if (!res || !res.success){ btn.disabled = false; return; }
+                added += res.added || 0; skipped += (res.skipped || []).length;
+            }
+            toast('นำเข้าแล้ว ' + added + ' คน' + (skipped ? ' · ข้ามที่มีอยู่แล้ว ' + skipped + ' คน' : ''), 'success');
+            importTable = null; importStudents = [];
+            document.getElementById('importPreview').classList.add('hidden');
+            document.getElementById('importFileLabel').textContent = 'เลือกไฟล์จากเครื่อง';
+            btn.disabled = false;
+            allStudentsData = []; dashboardLoaded = false; top10Loaded = false;
+            subjectRoomsMap = null;
+            renderSubjectList();
         }
 
         async function reloadAllData(){
