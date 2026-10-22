@@ -231,6 +231,9 @@
         }
         .mobile-appbar img{ width:1.9rem; height:1.9rem; border-radius:9999px; object-fit:cover; background:rgba(255,255,255,.15); flex-shrink:0; }
 
+        /* เมนูของครู (คะแนนเก็บ/ตั้งค่า) — ซ่อนจากผู้เรียน จนกว่าจะเข้าสู่ระบบครู */
+        html:not(.admin-on) .admin-only{ display:none !important; }
+
         /* แถบเมนูล่างแบบแอป */
         .bottom-nav{
             position:fixed; left:0; right:0; bottom:0; z-index:60;
@@ -410,8 +413,8 @@
                 <button data-view="search" onclick="showView('search')" class="nav-pill shrink-0"><i class="fas fa-magnifying-glass sparkle"></i><span class="whitespace-nowrap">ค้นหาคะแนน</span></button>
                 <button data-view="dashboard" onclick="showView('dashboard')" class="nav-pill shrink-0"><i class="fas fa-chart-column sparkle"></i><span class="whitespace-nowrap">แดชบอร์ด</span></button>
                 <button data-view="top10" onclick="showView('top10')" class="nav-pill shrink-0"><i class="fas fa-trophy sparkle"></i><span class="whitespace-nowrap">Top 10</span></button>
-                <button data-view="scores" onclick="showView('scores')" class="nav-pill shrink-0"><i class="fas fa-table-list sparkle"></i><span class="whitespace-nowrap">คะแนนเก็บ</span></button>
-                <button data-view="notify" onclick="showView('notify')" class="nav-pill shrink-0"><i class="fas fa-gear sparkle"></i><span class="whitespace-nowrap">ตั้งค่าระบบ</span></button>
+                <button data-view="scores" onclick="showView('scores')" class="nav-pill shrink-0 admin-only"><i class="fas fa-table-list sparkle"></i><span class="whitespace-nowrap">คะแนนเก็บ</span></button>
+                <button data-view="notify" onclick="showView('notify')" class="nav-pill shrink-0 admin-only"><i class="fas fa-gear sparkle"></i><span class="whitespace-nowrap">ตั้งค่าระบบ</span></button>
             </div>
         </div>
     </nav>
@@ -1059,7 +1062,8 @@
         <div class="container mx-auto px-4 text-center space-y-2">
             <div><i class="fas fa-code text-sky-400 mr-2"></i><span class="text-base sm:text-lg font-medium">พัฒนาโดย ครูเต้ย :: รังสรรค์ ลอยแก้ว</span></div>
             <div class="text-sm sm:text-base"><i class="fas fa-envelope text-sky-400 mr-2"></i><span>fietete41@gmail.com</span></div>
-            <div class="text-xs sm:text-sm text-slate-400">© 2025 ระบบตรวจสอบคะแนนออนไลน์</div>
+            <div class="text-xs sm:text-sm text-slate-400">© 2025 ระบบตรวจสอบคะแนนผู้เรียน</div>
+            <div class="admin-only-hint pt-1"><a href="#notify" onclick="showView('notify'); return false;" class="text-[11px] text-slate-600 hover:text-slate-300 transition"><i class="fas fa-lock mr-1"></i>สำหรับครู</a></div>
         </div>
     </footer>
 
@@ -1068,8 +1072,8 @@
         <button data-view="search" onclick="showView('search')"><i class="fas fa-magnifying-glass"></i><span>ค้นหา</span></button>
         <button data-view="dashboard" onclick="showView('dashboard')"><i class="fas fa-chart-column"></i><span>แดชบอร์ด</span></button>
         <button data-view="top10" onclick="showView('top10')"><i class="fas fa-trophy"></i><span>Top 10</span></button>
-        <button data-view="scores" onclick="showView('scores')"><i class="fas fa-table-list"></i><span>คะแนนเก็บ</span></button>
-        <button data-view="notify" onclick="showView('notify')"><i class="fas fa-gear"></i><span>ตั้งค่า</span></button>
+        <button data-view="scores" onclick="showView('scores')" class="admin-only"><i class="fas fa-table-list"></i><span>คะแนนเก็บ</span></button>
+        <button data-view="notify" onclick="showView('notify')" class="admin-only"><i class="fas fa-gear"></i><span>ตั้งค่า</span></button>
     </nav>
 
     <script>
@@ -1992,6 +1996,11 @@
             try { return localStorage.getItem(ADMIN_KEY) === '1'; } catch (e) { return false; }
         }
 
+        // แสดงเมนู "คะแนนเก็บ/ตั้งค่า" เฉพาะเมื่อครูเข้าสู่ระบบแล้ว (ผู้เรียนเห็นแค่ ค้นหา/แดชบอร์ด/Top 10)
+        function updateAdminNav(){
+            document.documentElement.classList.toggle('admin-on', isAdminUnlocked());
+        }
+
         function togglePass(inputId, eyeId){
             const inp = document.getElementById(inputId || 'teacherPass');
             const eye = document.getElementById(eyeId || 'passEye');
@@ -2022,6 +2031,7 @@
             if (remember){
                 try { localStorage.setItem(ADMIN_KEY, '1'); localStorage.setItem(ADMIN_PASS_KEY, pass); } catch (err) {}
             }
+            updateAdminNav();
             return true;
         }
 
@@ -2088,7 +2098,9 @@
             ['rememberAdmin', 'rememberScores'].forEach(id => { const c = document.getElementById(id); if (c) c.checked = false; });
             ['pwCur', 'pwNew', 'pwNew2'].forEach(id => { const i = document.getElementById(id); if (i){ i.value = ''; i.type = 'password'; } });
             ['eyeCur', 'eyeNew', 'eyeNew2'].forEach(id => { const e = document.getElementById(id); if (e) e.className = 'fas fa-eye'; });
+            updateAdminNav();
             toast('ออกจากระบบแล้ว', 'info');
+            showView('search');     // กลับหน้าผู้เรียน (เมนูครูถูกซ่อนแล้ว)
         }
 
         async function changePasscode(){
@@ -2912,6 +2924,7 @@
         /* ==================== INIT ==================== */
         document.addEventListener('DOMContentLoaded', function(){
             applySettings();          // ใช้ค่าตั้งค่าส่วนหัวที่บันทึกไว้ (ถ้ามี)
+            updateAdminNav();         // ซ่อน/แสดงเมนูของครู
             createParticles();
             // เปิดหน้าตามลิงก์ (#dashboard, #top10, #notify) ค่าเริ่มต้นคือหน้า "ค้นหาคะแนน"
             showView((location.hash || '#search').slice(1));
