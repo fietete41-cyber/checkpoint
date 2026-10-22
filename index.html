@@ -385,6 +385,10 @@
         function loadTheme(){
             let t = {};
             try { t = JSON.parse(localStorage.getItem(THEME_KEY)) || {}; } catch (e) {}
+            return normalizeTheme(t);
+        }
+        function normalizeTheme(t){
+            t = t || {};
             const okHex = h => /^#[0-9a-f]{6}$/i.test(h);
             const custom = (Array.isArray(t.custom) && t.custom.length === 3 && t.custom.every(okHex)) ? t.custom : DEFAULT_THEME.custom.slice();
             const preset = (t.preset === 'custom' || THEME_PRESETS.some(p => p.id === t.preset)) ? t.preset : DEFAULT_THEME.preset;
@@ -1039,7 +1043,7 @@
                         <span class="w-9 h-9 flex items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-cyan-600 text-white shrink-0"><i class="fas fa-palette"></i></span>
                         <h3 class="text-base sm:text-lg font-bold text-slate-800">ธีมสีของระบบ</h3>
                     </div>
-                    <p class="text-xs sm:text-sm text-slate-500 mb-5">เลือกสีไล่เฉดสำเร็จรูป 10 แบบ หรือมิกสีเอง · เลือกได้ว่าจะใช้สีปกติหรือพาสเทล — เห็นผลทันทีและจำไว้ในเครื่องนี้อัตโนมัติ</p>
+                    <p class="text-xs sm:text-sm text-slate-500 mb-5">เลือกสีไล่เฉดสำเร็จรูป 10 แบบ หรือมิกสีเอง · เลือกได้ว่าจะใช้สีปกติหรือพาสเทล — เห็นผลทันที และบันทึกให้ <b>ทุกเครื่อง</b> เห็นเหมือนกันอัตโนมัติ</p>
 
                     <label class="label">โทนสี</label>
                     <div class="inline-flex rounded-xl bg-slate-100 p-1 mb-5" id="toneSwitch">
@@ -1069,7 +1073,7 @@
                     <div class="flex flex-col sm:flex-row gap-3 mt-5">
                         <button onclick="resetTheme()" class="btn-secondary"><i class="fas fa-rotate-left mr-2"></i>คืนค่าสีเริ่มต้น</button>
                     </div>
-                    <p class="text-xs text-slate-400 mt-3"><i class="fas fa-circle-info mr-1"></i>ธีมสีบันทึกในเบราว์เซอร์เครื่องนี้ — หากต้องการให้ทุกเครื่องเห็นสีเดียวกัน ให้แก้ <code>DEFAULT_THEME</code> ในไฟล์ index.html</p>
+                    <p class="text-xs text-slate-400 mt-3"><i class="fas fa-circle-info mr-1"></i>ธีมสีบันทึกขึ้นระบบ (ชีต "Settings" ในสเปรดชีต) ผู้เรียนทุกเครื่องจะเห็นสีเดียวกันเมื่อเปิดเว็บ</p>
                 </div>
 
                 <!-- ==== ตั้งค่าส่วนหัว (Header) ==== -->
@@ -1134,10 +1138,10 @@
                     </div>
 
                     <div class="flex flex-col sm:flex-row gap-3 mt-6">
-                        <button onclick="saveSettings()" class="btn-primary flex-1"><i class="fas fa-floppy-disk mr-2"></i>บันทึกการตั้งค่า</button>
+                        <button onclick="saveSettings()" class="btn-primary flex-1"><i class="fas fa-floppy-disk mr-2"></i>บันทึกการตั้งค่า (ทุกเครื่อง)</button>
                         <button onclick="resetSettings()" class="btn-secondary flex-1"><i class="fas fa-rotate-left mr-2"></i>คืนค่าเริ่มต้น</button>
                     </div>
-                    <p class="text-xs text-slate-400 mt-3"><i class="fas fa-circle-info mr-1"></i>บันทึกไว้ในเบราว์เซอร์นี้ (localStorage) — หากเปลี่ยนเครื่อง/ล้างข้อมูลต้องตั้งใหม่ หรือแก้ค่า <code>DEFAULT_SETTINGS</code> ในไฟล์ index.html เพื่อให้เป็นค่าถาวรของทุกเครื่อง</p>
+                    <p class="text-xs text-slate-400 mt-3"><i class="fas fa-circle-info mr-1"></i>กด "บันทึกการตั้งค่า" แล้วค่าจะถูกเก็บในระบบ (ชีต "Settings") ผู้เรียนทุกเครื่องเห็นเหมือนกัน ไม่ต้องตั้งซ้ำเมื่อเปลี่ยนเครื่อง · ช่อง "ชื่อวิชาสำรอง/ครูสำรอง" ใช้เมื่อรายวิชาไม่ได้ระบุเอง</p>
                 </div>
 
             </div>
@@ -1289,19 +1293,24 @@
             reader.onload = ev => {
                 const img = new Image();
                 img.onload = () => {
-                    const MAX = 320;
-                    let w = img.width, h = img.height;
-                    if (w >= h && w > MAX){ h = Math.round(h * MAX / w); w = MAX; }
-                    else if (h > w && h > MAX){ w = Math.round(w * MAX / h); h = MAX; }
-                    const c = document.createElement('canvas');
-                    c.width = w; c.height = h;
-                    c.getContext('2d').drawImage(img, 0, 0, w, h);
-                    let uri;
-                    try { uri = c.toDataURL('image/png'); } catch (e) { uri = ev.target.result; }
-                    if (uri.length > 180000) uri = c.toDataURL('image/jpeg', 0.85);
+                    // ย่อรูปให้เล็กพอเก็บบนเซิร์ฟเวอร์และโหลดเร็วทุกครั้งที่เปิดเว็บ (เป้าหมาย ≤ ~90,000 ตัวอักษร)
+                    const LIMIT = 90000;
+                    let MAX = 256, uri = '';
+                    for (let attempt = 0; attempt < 6; attempt++){
+                        let w = img.width, h = img.height;
+                        if (w >= h && w > MAX){ h = Math.round(h * MAX / w); w = MAX; }
+                        else if (h > w && h > MAX){ w = Math.round(w * MAX / h); h = MAX; }
+                        const c = document.createElement('canvas');
+                        c.width = w; c.height = h;
+                        c.getContext('2d').drawImage(img, 0, 0, w, h);
+                        try { uri = c.toDataURL('image/png'); } catch (e) { uri = ev.target.result; break; }
+                        if (uri.length > LIMIT) uri = c.toDataURL('image/jpeg', 0.85);
+                        if (uri.length <= LIMIT) break;
+                        MAX = Math.round(MAX * 0.75);
+                    }
                     document.getElementById('setLogo').value = uri;
                     previewSettings();
-                    toast('อัปโหลดโลโก้แล้ว — กด "บันทึกการตั้งค่า" เพื่อจัดเก็บถาวร', 'success');
+                    toast('อัปโหลดโลโก้แล้ว — กด "บันทึกการตั้งค่า" เพื่อให้ทุกเครื่องเห็น', 'success');
                 };
                 img.onerror = () => toast('ไฟล์รูปเสียหรือเปิดไม่ได้', 'error');
                 img.src = ev.target.result;
@@ -1321,10 +1330,10 @@
             try {
                 localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
                 applySettings();
-                toast('บันทึกการตั้งค่าเรียบร้อย ✅', 'success');
             } catch (e) {
-                toast('บันทึกไม่สำเร็จ: ' + e.message, 'error');
+                toast('บันทึกในเครื่องไม่สำเร็จ: ' + e.message, 'error');
             }
+            pushSiteConfig(true);        // ส่งขึ้นเซิร์ฟเวอร์ ให้ทุกเครื่องเห็นเหมือนกัน
         }
 
         function resetSettings(){
@@ -1332,7 +1341,48 @@
             settings = { ...DEFAULT_SETTINGS };
             applySettings();
             fillSettingsForm();
-            toast('คืนค่าเริ่มต้นแล้ว', 'info');
+            pushSiteConfig(true);
+        }
+
+        /* ---- ตั้งค่าส่วนหัว/ธีมที่ใช้ร่วมกันทุกเครื่อง (เก็บในชีต Settings ของสเปรดชีต) ---- */
+        let sitePushTimer = null;
+
+        // ผู้เข้าชมทุกคน: โหลดค่าล่าสุดจากเซิร์ฟเวอร์ แล้วทับค่าที่จำไว้ในเครื่อง (ครั้งแรกอาจเห็นค่าเริ่มต้นแวบหนึ่ง)
+        async function syncSiteConfig(){
+            if (API_URL.includes('YOUR_SCRIPT_ID')) return;
+            try{
+                const res = await fetch(`${API_URL}?action=getSiteConfig`);
+                const d = await res.json();
+                if (!d || !d.success || !d.data) return;          // เซิร์ฟเวอร์เก่า/ยังไม่เคยบันทึก -> ใช้ค่าในเครื่อง/ค่าเริ่มต้น
+                const cfg = d.data;
+                if (cfg.settings){
+                    settings = { ...DEFAULT_SETTINGS, ...cfg.settings };
+                    if (!settings.logo) settings.logo = DEFAULT_SETTINGS.logo;
+                    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) {}
+                }
+                if (cfg.theme){
+                    theme = normalizeTheme(cfg.theme);
+                    try { localStorage.setItem(THEME_KEY, JSON.stringify(theme)); } catch (e) {}
+                    applyTheme(theme);
+                }
+                applySettings();
+                if (document.getElementById('themeGrid') && isAdminUnlocked()){ renderThemeUI(); fillSettingsForm(); }
+            }catch(err){ console.warn('getSiteConfig:', err); }
+        }
+
+        // ครู: ส่งค่าปัจจุบันขึ้นเซิร์ฟเวอร์ (immediate = ส่งทันที, ไม่ใส่ = หน่วง 0.9 วินาทีเผื่อกำลังลากเลือกสี)
+        function pushSiteConfig(immediate){
+            clearTimeout(sitePushTimer);
+            const run = async () => {
+                if (API_URL.includes('YOUR_SCRIPT_ID') || !isAdminUnlocked()){ toast('บันทึกไว้ในเครื่องนี้ (ยังไม่ได้เข้าสู่ระบบผู้ดูแล)', 'info'); return; }
+                try{
+                    const res = await fetch(API_URL, { method:'POST', body:new URLSearchParams({ action:'saveSiteConfig', payload: JSON.stringify({ passcode: activePasscode, config: { settings, theme } }) }) });
+                    const d = await res.json();
+                    if (d.success) toast('บันทึกแล้ว — ทุกเครื่องจะเห็นเหมือนกัน ✅', 'success');
+                    else toast('บันทึกขึ้นเซิร์ฟเวอร์ไม่ได้: ' + (/invalid action/i.test(d.error || '') ? 'ต้องอัปเดตโค้ด Apps Script ก่อน (ตอนนี้บันทึกไว้ในเครื่องนี้เท่านั้น)' : (d.error || 'ไม่ทราบสาเหตุ')), 'error');
+                }catch(err){ toast('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ — บันทึกไว้ในเครื่องนี้เท่านั้น', 'error'); }
+            };
+            if (immediate) run(); else sitePushTimer = setTimeout(run, 900);
         }
 
         const ICON_CHOICES = ['fa-snowflake','fa-fan','fa-temperature-low','fa-wind','fa-fire','fa-bolt','fa-plug',
@@ -1358,7 +1408,10 @@
         }
 
         /* ==================== ธีมสี (ตัวเลือกในหน้าตั้งค่า) ==================== */
-        function saveTheme(){ try { localStorage.setItem(THEME_KEY, JSON.stringify(theme)); } catch (e) {} }
+        function saveTheme(){
+            try { localStorage.setItem(THEME_KEY, JSON.stringify(theme)); } catch (e) {}
+            pushSiteConfig();            // ธีมที่เลือกถูกบันทึกขึ้นเซิร์ฟเวอร์อัตโนมัติ (ทุกเครื่องเห็นเหมือนกัน)
+        }
 
         function themePreviewGrad(base, tone){
             return buildThemeVars(base, tone, theme.dir).headGrad;
@@ -1418,7 +1471,7 @@
             theme = { preset: DEFAULT_THEME.preset, tone: DEFAULT_THEME.tone, dir: DEFAULT_THEME.dir, custom: DEFAULT_THEME.custom.slice() };
             try { localStorage.removeItem(THEME_KEY); } catch (e) {}
             applyTheme(theme); renderThemeUI();
-            toast('คืนค่าสีเริ่มต้นแล้ว', 'info');
+            pushSiteConfig();
         }
 
         const DEFAULT_ASSIGNMENTS = [
@@ -3271,7 +3324,8 @@
 
         /* ==================== INIT ==================== */
         document.addEventListener('DOMContentLoaded', function(){
-            applySettings();          // ใช้ค่าตั้งค่าส่วนหัวที่บันทึกไว้ (ถ้ามี)
+            applySettings();          // ใช้ค่าตั้งค่าส่วนหัวที่จำไว้ในเครื่อง (แสดงทันที)
+            syncSiteConfig();         // แล้วโหลดค่าล่าสุดจากเซิร์ฟเวอร์ (ทุกเครื่องเห็นเหมือนกัน)
             updateAdminNav();         // ซ่อน/แสดงเมนูของครู
             createParticles();
             // เปิดหน้าตามลิงก์ (#dashboard, #top10, #notify) ค่าเริ่มต้นคือหน้า "ค้นหาคะแนน"
