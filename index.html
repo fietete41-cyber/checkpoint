@@ -235,6 +235,8 @@
         html:not(.mode-admin) .admin-only{ display:none !important; }
         html.mode-admin .student-only{ display:none !important; }
 
+        .roster-sticky-h{ background:var(--c1); color:var(--on); }
+
         .admin-switch{
             display:inline-flex; align-items:center; gap:.45rem; flex-shrink:0;
             padding:.3rem .45rem .3rem .7rem; border-radius:9999px; cursor:pointer;
@@ -429,6 +431,7 @@
                 <i class="fas fa-lock as-ico"></i><span class="as-label">ผู้ดูแล</span><span class="as-track"><span class="as-knob"></span></span>
             </button>
             <div class="flex flex-nowrap sm:flex-wrap justify-start sm:justify-center gap-2 sm:gap-3 py-3 px-28 overflow-x-auto no-scrollbar">
+                <button data-view="roster" onclick="showView('roster')" class="nav-pill shrink-0 student-only"><i class="fas fa-table-list sparkle"></i><span class="whitespace-nowrap">ตารางคะแนน</span></button>
                 <button data-view="search" onclick="showView('search')" class="nav-pill shrink-0 student-only"><i class="fas fa-magnifying-glass sparkle"></i><span class="whitespace-nowrap">ค้นหาคะแนน</span></button>
                 <button data-view="dashboard" onclick="showView('dashboard')" class="nav-pill shrink-0 student-only"><i class="fas fa-chart-column sparkle"></i><span class="whitespace-nowrap">แดชบอร์ด</span></button>
                 <button data-view="top10" onclick="showView('top10')" class="nav-pill shrink-0 student-only"><i class="fas fa-trophy sparkle"></i><span class="whitespace-nowrap">Top 10</span></button>
@@ -452,6 +455,32 @@
             <i class="fas fa-chevron-down text-slate-400 text-xs shrink-0 pointer-events-none"></i>
         </div>
     </div>
+
+    <!-- ตารางคะแนนทั้งห้อง (ดูได้โดยไม่ต้องกรอกรหัส) -->
+    <section id="roster" class="view py-10 sm:py-12 relative hidden">
+        <div class="container mx-auto px-4 max-w-6xl">
+            <div class="text-center mb-7">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-sky-500 to-cyan-600 text-white text-2xl mb-4 shadow-lg shadow-cyan-500/30">
+                    <i class="fas fa-table-list"></i>
+                </div>
+                <h2 class="text-2xl md:text-3xl font-bold text-slate-800 mb-2">ตารางคะแนนทั้งห้อง</h2>
+                <p id="rosterSubtitle" class="text-sm sm:text-base text-slate-500 px-2">เลือกห้องเพื่อดูคะแนนของผู้เรียนทุกคนในรายวิชานี้</p>
+            </div>
+
+            <div class="frost-card rounded-3xl p-4 sm:p-6">
+                <div id="rosterRooms" class="flex flex-nowrap justify-start sm:justify-center gap-2 overflow-x-auto no-scrollbar mb-4 -mx-1 px-1"></div>
+                <div class="relative max-w-sm mx-auto mb-4">
+                    <i class="fas fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                    <input type="text" id="rosterFilter" oninput="renderRoster()" placeholder="ค้นหาชื่อในตาราง" class="input-field !pl-10 text-sm">
+                </div>
+                <div id="rosterInfo" class="text-xs sm:text-sm text-slate-500 text-center mb-3"></div>
+                <div class="relative">
+                    <div class="loading text-center py-10 text-slate-400"><i class="fas fa-spinner fa-spin text-2xl"></i></div>
+                    <div id="rosterTableWrap" class="table-responsive"></div>
+                </div>
+            </div>
+        </div>
+    </section>
 
     <!-- Search Section -->
     <section id="search" class="view py-10 sm:py-12">
@@ -1139,6 +1168,7 @@
 
     <!-- เมนูล่างแบบแอป (มือถือเท่านั้น) -->
     <nav class="bottom-nav md:hidden">
+        <button data-view="roster" onclick="showView('roster')" class="student-only"><i class="fas fa-table-list"></i><span>ตาราง</span></button>
         <button data-view="search" onclick="showView('search')" class="student-only"><i class="fas fa-magnifying-glass"></i><span>ค้นหา</span></button>
         <button data-view="dashboard" onclick="showView('dashboard')" class="student-only"><i class="fas fa-chart-column"></i><span>แดชบอร์ด</span></button>
         <button data-view="top10" onclick="showView('top10')" class="student-only"><i class="fas fa-trophy"></i><span>Top 10</span></button>
@@ -1417,10 +1447,10 @@
         let currentView = 'search';
         let dashboardLoaded = false;
         let top10Loaded = false;
-        const VIEWS = ['search', 'dashboard', 'top10', 'scores', 'notify'];
+        const VIEWS = ['roster', 'search', 'dashboard', 'top10', 'scores', 'notify'];
         const ADMIN_VIEWS = ['scores', 'notify'];
         const VIEW_LABELS = {
-            search: 'ค้นหาคะแนน', dashboard: 'แดชบอร์ด', top10: 'Top 10 · ทำเนียบคนเก่ง',
+            roster: 'ตารางคะแนน', search: 'ค้นหาคะแนน', dashboard: 'แดชบอร์ด', top10: 'Top 10 · ทำเนียบคนเก่ง',
             scores: 'คะแนนเก็บ', notify: 'ตั้งค่าระบบ'
         };
 
@@ -1429,10 +1459,10 @@
 
         /* สลับหน้าแบบ "หน้าใครหน้ามัน" — แสดงทีละหน้าจากแถบเมนู */
         function showView(name){
-            if (!VIEWS.includes(name)) name = 'search';
+            if (!VIEWS.includes(name)) name = 'roster';
             if (ADMIN_VIEWS.includes(name) && !adminMode){      // ลิงก์ตรง #scores / #notify -> ขอรหัสก่อน
                 requestAdminMode(name);
-                if (!adminMode) name = 'search';
+                if (!adminMode) name = 'roster';
                 else return;
             }
             if (adminMode && !ADMIN_VIEWS.includes(name)) name = 'scores';   // โหมดผู้ดูแลมีแค่ คะแนนเก็บ/ตั้งค่า
@@ -1460,6 +1490,7 @@
             if (appTitle) appTitle.textContent = VIEW_LABELS[name] || (settings.title || 'ระบบคะแนน');
 
             // โหลดข้อมูลเฉพาะตอนเปิดหน้านั้นครั้งแรก
+            if (name === 'roster') loadRoster();
             if (name === 'dashboard' && !dashboardLoaded){ dashboardLoaded = true; loadDashboard(); }
             if (name === 'top10' && !top10Loaded){ top10Loaded = true; loadTop10(); }
 
@@ -1469,7 +1500,7 @@
             if (location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-        window.addEventListener('hashchange', () => showView((location.hash || '#search').slice(1)));
+        window.addEventListener('hashchange', () => showView((location.hash || '#roster').slice(1)));
 
         function getGrade(score){
             if (score >= 80) return { grade:'A',  gpa:'4.0', description:'ดีเยี่ยม',     color:'text-green-600' };
@@ -1659,6 +1690,62 @@
 
         /* ==================== ค้นหาผู้เรียน ==================== */
         document.getElementById('studentId').addEventListener('keypress', e => { if (e.key === 'Enter') searchStudent(); });
+
+        /* ==================== ตารางคะแนนทั้งห้อง (ไม่ต้องกรอกรหัส) ==================== */
+        let rosterRoom = null;
+
+        async function loadRoster(){
+            showLoading('roster');
+            try{ await ensureData('public'); }catch(err){ console.error(err); }
+            hideLoading('roster');
+            renderRoster();
+        }
+
+        function rosterRooms(){
+            return [...new Set(allStudentsData.map(s => s.room).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'th', { numeric: true }));
+        }
+
+        function selectRosterRoom(r){
+            rosterRoom = r;
+            document.getElementById('rosterFilter').value = '';
+            renderRoster();
+        }
+
+        function renderRoster(){
+            const wrap = document.getElementById('rosterTableWrap');
+            const tabs = document.getElementById('rosterRooms');
+            const info = document.getElementById('rosterInfo');
+            document.getElementById('rosterSubtitle').textContent = 'คะแนนของผู้เรียนทุกคนในวิชา' + subjectName();
+            const rooms = rosterRooms();
+            if (!rooms.length){
+                tabs.innerHTML = ''; info.textContent = '';
+                wrap.innerHTML = '<p class="text-center text-slate-500 py-8"><i class="fas fa-lock mr-2 text-amber-500"></i>' +
+                    (lockedIds.length ? 'รายวิชานี้ยังไม่เปิดให้ดูคะแนน — ติดต่อครูผู้สอน' : 'ยังไม่มีข้อมูลผู้เรียนในรายวิชานี้') + '</p>';
+                return;
+            }
+            if (!rooms.includes(rosterRoom)) rosterRoom = rooms[0];
+            tabs.innerHTML = rooms.map(r => `<button type="button" onclick="selectRosterRoom(this.dataset.room)" data-room="${escHtml(r)}"
+                class="room-tab shrink-0 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition ${r === rosterRoom ? 'room-tab-active' : ''}">🏫 ${escHtml(r)}</button>`).join('');
+
+            const q = document.getElementById('rosterFilter').value.trim().toLowerCase();
+            const all = allStudentsData.filter(s => s.room === rosterRoom).sort((a, b) => (a.no - b.no) || a.name.localeCompare(b.name, 'th'));
+            const list = q ? all.filter(s => s.name.toLowerCase().includes(q)) : all;
+            info.textContent = 'ห้อง ' + rosterRoom + ' · ผู้เรียน ' + all.length + ' คน' + (q ? ' (พบ ' + list.length + ' คน)' : '');
+
+            const head = '<th class="px-3 py-3 text-center rounded-tl-xl">เลขที่</th><th class="px-3 py-3 text-left sticky left-0 z-10 roster-sticky-h">ชื่อ-นามสกุล</th>' +
+                ASSIGNMENTS.map(a => `<th class="px-3 py-3 text-center">${escHtml(a.name)} (${a.max})</th>`).join('') +
+                '<th class="px-3 py-3 text-center rounded-tr-xl">คะแนนรวม</th>';
+            const body = list.map(s => `
+                <tr class="border-b border-slate-100 hover:bg-sky-50 transition-colors">
+                    <td class="px-3 py-2.5 text-center text-slate-500">${s.no || ''}</td>
+                    <td class="px-3 py-2.5 font-medium text-slate-800 whitespace-nowrap sticky left-0 bg-white/95 z-[1]">${escHtml(s.name)}</td>
+                    ${ASSIGNMENTS.map(a => { const v = s[a.key] || 0; return `<td class="px-3 py-2.5 text-center ${v <= 0 ? 'text-slate-300' : ''}">${v <= 0 ? '–' : v}</td>`; }).join('')}
+                    <td class="px-3 py-2.5 text-center font-bold ${getGrade(s.totalScore).color}">${s.totalScore}</td>
+                </tr>`).join('');
+            wrap.innerHTML = list.length
+                ? `<table class="w-full text-sm" style="min-width:0"><thead><tr class="bg-gradient-to-r from-sky-500 to-cyan-600 text-white">${head}</tr></thead><tbody>${body}</tbody></table>`
+                : '<p class="text-center text-slate-500 py-8">ไม่พบชื่อที่ค้นหา</p>';
+        }
 
         /* รหัสผู้เรียนในระบบ = ปีที่เข้าศึกษา 2 หลัก + เลข 5 หลักท้าย (เช่น 6740001)
            ถ้าได้เลขประจำตัวเต็ม 11 หลัก (เช่น 67201040001) จะแปลงเป็นรหัส 7 หลักให้ */
@@ -2113,7 +2200,7 @@
             adminMode = false;
             adminSession = false;            // ครั้งหน้าต้องใส่รหัสใหม่ (ยกเว้นติ๊กจดจำในเครื่อง)
             updateAdminNav();
-            showView('search');
+            showView('roster');
         }
 
         function openAdminModal(){
@@ -2234,7 +2321,7 @@
             ['eyeCur', 'eyeNew', 'eyeNew2'].forEach(id => { const e = document.getElementById(id); if (e) e.className = 'fas fa-eye'; });
             updateAdminNav();
             toast('ออกจากระบบแล้ว', 'info');
-            showView('search');     // กลับหน้าผู้เรียน (เมนูครูถูกซ่อนแล้ว)
+            showView('roster');     // กลับหน้าผู้เรียน (เมนูครูถูกซ่อนแล้ว)
         }
 
         async function changePasscode(){
@@ -3116,7 +3203,7 @@
             updateAdminNav();         // ซ่อน/แสดงเมนูของครู
             createParticles();
             // เปิดหน้าตามลิงก์ (#dashboard, #top10, #notify) ค่าเริ่มต้นคือหน้า "ค้นหาคะแนน"
-            showView((location.hash || '#search').slice(1));
+            showView((location.hash || '#roster').slice(1));
         });
     </script>
 </body>
